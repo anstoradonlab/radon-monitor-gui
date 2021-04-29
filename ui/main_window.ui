@@ -84,15 +84,8 @@
            <string>GroupBox</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_2">
-           <item row="1" column="0">
-            <widget class="QPushButton" name="backgroundButton">
-             <property name="text">
-              <string>Background</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="2">
-            <widget class="QDateTimeEdit" name="calDateTimeEdit">
+           <item row="1" column="2">
+            <widget class="QDateTimeEdit" name="bgDateTimeEdit">
              <property name="enabled">
               <bool>false</bool>
              </property>
@@ -111,8 +104,8 @@
              </property>
             </widget>
            </item>
-           <item row="1" column="2">
-            <widget class="QDateTimeEdit" name="bgDateTimeEdit">
+           <item row="0" column="2">
+            <widget class="QDateTimeEdit" name="calDateTimeEdit">
              <property name="enabled">
               <bool>false</bool>
              </property>
@@ -121,6 +114,13 @@
              </property>
              <property name="calendarPopup">
               <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QPushButton" name="backgroundButton">
+             <property name="text">
+              <string>Background</string>
              </property>
             </widget>
            </item>
@@ -135,6 +135,20 @@
             <widget class="QCheckBox" name="bgCheckBox">
              <property name="text">
               <string>later at</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="QPushButton" name="stopCalPushButton">
+             <property name="text">
+              <string>Stop calibration</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="3">
+            <widget class="QPushButton" name="stopBgPushButton">
+             <property name="text">
+              <string>Stop background</string>
              </property>
             </widget>
            </item>

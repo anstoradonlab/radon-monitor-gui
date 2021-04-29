@@ -19,9 +19,8 @@ from ansto_radon_monitor.configuration import config_from_yamlfile
 
 from ui_mainwindow import Ui_MainWindow
 
-import pandas as pd
-
-import tabulate
+# import pandas as pd
+# import tabulate
 
 
 # data model for linking table view with instrument data
@@ -182,6 +181,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # TODO: make this only scroll if the scroll bar was already at the end
         self.model.rowsInserted.connect(lambda: QtCore.QTimer.singleShot(0, self.pastDataTableView.scrollToBottom))
 
+        self.stopBgPushButton.clicked.connect(self.onStopBg)
+        self.stopCalPushButton.clicked.connect(self.onStopCal)
+
     
 
     def onLoadConfiguration(self, s):
@@ -214,6 +216,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             start_time = None
         print(f"calibrate at {start_time} UTC")
         self.instrument_controller.run_calibration(start_time=start_time)
+    
+    def onStopCal(self, s):
+        self.instrument_controller.stop_calibration()
 
     def onBackground(self, s):
         if self.bgDateTimeEdit.isEnabled():
@@ -223,6 +228,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         print(f"background at {start_time} UTC")
         # TODO: also need to determine duration from UI + config
         self.instrument_controller.run_background(start_time=start_time)
+    
+    def onStopBg(self,s):
+        self.instrument_controller.stop_background()
 
 
 
