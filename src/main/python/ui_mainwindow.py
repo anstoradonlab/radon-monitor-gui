@@ -26,19 +26,15 @@ class Ui_MainWindow(object):
         self.verticalLayout_2.setObjectName("verticalLayout_2")
         self.tabWidget = QtWidgets.QTabWidget(self.layoutWidget)
         self.tabWidget.setEnabled(True)
+        self.tabWidget.setTabPosition(QtWidgets.QTabWidget.West)
         self.tabWidget.setObjectName("tabWidget")
         self.tab = QtWidgets.QWidget()
         self.tab.setObjectName("tab")
-        self.gridLayout = QtWidgets.QGridLayout(self.tab)
-        self.gridLayout.setObjectName("gridLayout")
-        self.comboBox = QtWidgets.QComboBox(self.tab)
-        self.comboBox.setObjectName("comboBox")
-        self.gridLayout.addWidget(self.comboBox, 0, 0, 1, 1)
-        spacerItem = QtWidgets.QSpacerItem(320, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.gridLayout.addItem(spacerItem, 0, 1, 1, 1)
-        self.comboBox_2 = QtWidgets.QComboBox(self.tab)
-        self.comboBox_2.setObjectName("comboBox_2")
-        self.gridLayout.addWidget(self.comboBox_2, 0, 2, 1, 1)
+        self.horizontalLayout_2 = QtWidgets.QHBoxLayout(self.tab)
+        self.horizontalLayout_2.setObjectName("horizontalLayout_2")
+        self.pastDataTableView = QtWidgets.QTableView(self.tab)
+        self.pastDataTableView.setObjectName("pastDataTableView")
+        self.horizontalLayout_2.addWidget(self.pastDataTableView)
         self.graph_widget = PlotWidget(self.tab)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
@@ -46,15 +42,12 @@ class Ui_MainWindow(object):
         sizePolicy.setHeightForWidth(self.graph_widget.sizePolicy().hasHeightForWidth())
         self.graph_widget.setSizePolicy(sizePolicy)
         self.graph_widget.setObjectName("graph_widget")
-        self.gridLayout.addWidget(self.graph_widget, 1, 0, 1, 3)
+        self.horizontalLayout_2.addWidget(self.graph_widget)
         self.tabWidget.addTab(self.tab, "")
         self.tab_2 = QtWidgets.QWidget()
         self.tab_2.setObjectName("tab_2")
         self.horizontalLayout = QtWidgets.QHBoxLayout(self.tab_2)
         self.horizontalLayout.setObjectName("horizontalLayout")
-        self.pastDataTableView = QtWidgets.QTableView(self.tab_2)
-        self.pastDataTableView.setObjectName("pastDataTableView")
-        self.horizontalLayout.addWidget(self.pastDataTableView)
         self.tabWidget.addTab(self.tab_2, "")
         self.verticalLayout_2.addWidget(self.tabWidget)
         self.groupBox = QtWidgets.QGroupBox(self.layoutWidget)
@@ -96,11 +89,16 @@ class Ui_MainWindow(object):
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout.setObjectName("verticalLayout")
         self.livedataArea = QtWidgets.QTextEdit(self.layoutWidget1)
+        font = QtGui.QFont()
+        font.setFamily("Monospace")
+        self.livedataArea.setFont(font)
         self.livedataArea.setTextInteractionFlags(QtCore.Qt.TextSelectableByKeyboard|QtCore.Qt.TextSelectableByMouse)
         self.livedataArea.setObjectName("livedataArea")
         self.verticalLayout.addWidget(self.livedataArea)
-        self.logArea = QtWidgets.QTextEdit(self.layoutWidget1)
-        self.logArea.setTextInteractionFlags(QtCore.Qt.TextSelectableByKeyboard|QtCore.Qt.TextSelectableByMouse)
+        self.logArea = QtWidgets.QPlainTextEdit(self.layoutWidget1)
+        font = QtGui.QFont()
+        font.setFamily("Monospace")
+        self.logArea.setFont(font)
         self.logArea.setObjectName("logArea")
         self.verticalLayout.addWidget(self.logArea)
         self.verticalLayout_3.addWidget(self.splitter)
@@ -124,7 +122,7 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menuFile.menuAction())
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(1)
+        self.tabWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -132,7 +130,7 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MainWindow", "Tab 1"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "Tab 2"))
-        self.groupBox.setTitle(_translate("MainWindow", "GroupBox"))
+        self.groupBox.setTitle(_translate("MainWindow", "Calibration and background"))
         self.bgDateTimeEdit.setDisplayFormat(_translate("MainWindow", "yyyy-MM-dd hh:mm"))
         self.calibrateButton.setText(_translate("MainWindow", "Calibrate"))
         self.calDateTimeEdit.setDisplayFormat(_translate("MainWindow", "yyyy-MM-dd hh:mm"))
@@ -144,7 +142,7 @@ class Ui_MainWindow(object):
         self.livedataArea.setHtml(_translate("MainWindow", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
 "p, li { white-space: pre-wrap; }\n"
-"</style></head><body style=\" font-family:\'Sans Serif\'; font-size:9pt; font-weight:400; font-style:normal;\">\n"
+"</style></head><body style=\" font-family:\'Monospace\'; font-size:9pt; font-weight:400; font-style:normal;\">\n"
 "<p style=\" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'MS Shell Dlg 2\'; font-size:8pt;\">Radon detector live data</span></p>\n"
 "<p style=\"-qt-paragraph-type:empty; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:\'MS Shell Dlg 2\'; font-size:8pt;\"><br /></p>\n"
 "<p style=\"-qt-paragraph-type:empty; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:\'MS Shell Dlg 2\'; font-size:8pt;\"><br /></p>\n"
@@ -183,13 +181,6 @@ class Ui_MainWindow(object):
 "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'MS Shell Dlg 2\'; font-size:8pt;\">show</span></p>\n"
 "<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:\'MS Shell Dlg 2\'; font-size:8pt;\"><br /></p>\n"
 "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'MS Shell Dlg 2\'; font-size:8pt;\">scrollbar</span></p></body></html>"))
-        self.logArea.setHtml(_translate("MainWindow", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
-"<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
-"p, li { white-space: pre-wrap; }\n"
-"</style></head><body style=\" font-family:\'Sans Serif\'; font-size:9pt; font-weight:400; font-style:normal;\">\n"
-"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'MS Shell Dlg 2\'; font-size:8.25pt;\">Log messages go here</span></p>\n"
-"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:\'MS Shell Dlg 2\'; font-size:8.25pt;\"><br /></p>\n"
-"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:\'MS Shell Dlg 2\'; font-size:8.25pt;\"><br /></p></body></html>"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.actionLoad_Configuration.setText(_translate("MainWindow", "Load Configuration"))
         self.actionQuit.setText(_translate("MainWindow", "Quit"))
