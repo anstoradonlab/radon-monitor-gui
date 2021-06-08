@@ -1,21 +1,23 @@
 import copy
 import datetime
 import math
+import os
 import pprint
 import sys
 import threading
 import time
+from typing import Dict
 
 import numpy as np
 import pyqtgraph
-from ansto_radon_monitor.configuration import config_from_yamlfile
+from ansto_radon_monitor.configuration import Configuration, config_from_yamlfile
 from ansto_radon_monitor.main import setup_logging
 from ansto_radon_monitor.main_controller import MainController, initialize
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
-from PyQt5 import QtCore, QtWidgets, uic
+from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
 # from PyQt5.QtWidgets import QMainWindow
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer, QSettings
 from ui_mainwindow import Ui_MainWindow
 
 # import pandas as pd
@@ -114,6 +116,7 @@ class TableModel(QtCore.QAbstractTableModel):
 import logging
 import sys
 
+
 _logger = logging.getLogger(__name__)
 
 # small class for our 'log message' signal to live in
@@ -146,12 +149,16 @@ class QTextEditLogger_non_threadsafe(logging.Handler):
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
-    def __init__(self, appctxt, *args, **kwargs):
+    def __init__(self, appctxt:ApplicationContext, *args, **kwargs):
         # fbs application context
         self.appctxt = appctxt
         super(MainWindow, self).__init__(*args, **kwargs)
 
+        self.qsettings = QSettings('au.gov.ansto', appctxt.app.applicationName())
+        _logger.debug(f'QSettings initialised at {self.qsettings.fileName()}')
+
         self.instrument_controller = None
+        self.config: Configuration = None
 
         # Load the UI Page
         # uic.loadUi(appctxt.get_resource("main_window.ui"), baseinstance=self)
@@ -190,17 +197,29 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.connect_signals()
         # when were the data tables updated?
-        self.update_times = {}
+        self.update_times: Dict[str, datetime.datetime] = {}
 
         self.redraw_timer = QTimer()
         self.redraw_timer.setInterval(1000)
         self.redraw_timer.timeout.connect(self.update_displays)
         self.redraw_timer.start()
 
-    def plot(self, x, y):
-        self.graph_widget.plot(x, y)
+        try:
+            self.restoreGeometry(self.qsettings.value("geometry"))
+            self.restoreState(self.qsettings.value("windowState"))
+        except TypeError:
+            pass
 
-    def step_plot(self, x, y):
+        if self.qsettings.contains('config_fname'):
+            config_fname = self.qsettings.value('config_fname')
+            self.begin_controlling(config_fname)
+
+
+    def plot(self, x, y, title=None):
+        self.graph_widget.plot(x, y)
+        self.graph_widget.setTitle(title)
+
+    def step_plot(self, x, y, title=None):
         dx = np.r_[np.diff(x), np.median(np.diff(x))]
         xplt = np.empty(len(x) * 2)
         xplt[::2] = x
@@ -209,10 +228,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         yplt[::2] = y
         yplt[1::2] = y
         self.graph_widget.plot(xplt, yplt)
+        self.graph_widget.setTitle(title)
+    
+    def show_data(self):
+        if self.config is not None:
+            data_dir = os.path.realpath(self.config.data_dir)
+            QtGui.QDesktopServices.openUrl(QtCore.QUrl.fromLocalFile(data_dir))
 
     def connect_signals(self):
         self.actionLoad_Configuration.triggered.connect(self.onLoadConfiguration)
         self.actionQuit.triggered.connect(self.close)
+        self.actionShow_Data.triggered.connect(self.show_data)
         self.calibrateButton.clicked.connect(self.onCalibrate)
         self.backgroundButton.clicked.connect(self.onBackground)
 
@@ -235,19 +261,28 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self, "Open configuration", ".", "YAML files (*.yaml *.yml)"
         )
         print(f"Loading from {config_fname}")
+        self.qsettings.setValue('config_fname', config_fname)
+        self.begin_controlling(config_fname)
+        
 
+    def begin_controlling(self, config_fname):
+        if self.instrument_controller is not None:
+            self.instrument_controller.shutdown()
         config = config_from_yamlfile(config_fname)
-
+        self.config = config
         # update times need to be reset
         self.update_times = {}
-
         self.instrument_controller = initialize(config, mode="thread")
+
 
     def closeEvent(self, event):
         # catch the close event
         print("shutting down instrument controller")
         if self.instrument_controller is not None:
             self.instrument_controller.shutdown()
+
+        self.qsettings.setValue("geometry", self.saveGeometry());
+        self.qsettings.setValue("windowState", self.saveState());       
 
         event.accept()
         # abort exiting with "event.ignore()"
@@ -317,7 +352,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
             #            if 'RTV' in self.update_times:
             #                print(self.update_times['RTV'])
-            if tname == "RTV":
+            if "RTV" in tname:
                 if prev_time is None:
                     self.model.update_data(newdata)
                 else:
@@ -335,13 +370,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         status_dict = ic.get_status()
         #jq = ic.get_job_queue()
         status_text = pprint.pformat(status_dict)
+        status_text += f'\nTables:{ic.list_tables()}'
         #status_text += "\n"
         #status_text += str(jq)
         self.livedataArea.setText(status_text)
 
         # tref = datetime.datetime.now()
         # x = [(itm['Datetime'] - tref).total_seconds() for itm in data['RTV']]
-        data = ic.get_rows()
-        x = [itm['RecNum'] for itm in data['Results']]
-        y = [itm['Temp'] for itm in data['Results']]
-        self.step_plot(x, y)
+        tables = ic.list_tables()
+        for tname in tables:
+            if 'Results' in tname:
+                t, data = ic.get_rows(tname)
+                x = [itm['RecNbr'] for itm in data]
+                y = [itm['PanTemp_Avg'] for itm in data]
+                self.step_plot(x, y, title=tname)
