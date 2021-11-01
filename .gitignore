@@ -54,3 +54,6 @@ minenv/
 
 # Data folder, created when app runs
 data/
+
+# build directory for fbs
+target/
