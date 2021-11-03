@@ -52,8 +52,9 @@ MANIFEST
 venv*/
 minenv/
 
-# Data folder, created when app runs
+# Data folder and database, created when app runs
 data/
+*.db
 
 # build directory for fbs
 target/

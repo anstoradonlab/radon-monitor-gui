@@ -1,7 +1,9 @@
 import datetime
 import math
 import time
+
 from PyQt5 import QtCore, QtWidgets
+
 from ui_c_and_b import Ui_CAndBForm
 
 
@@ -29,7 +31,6 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
         self.redraw_timer.timeout.connect(self.update_displays)
         self.redraw_timer.start()
 
-
     def update_displays(self):
         # update the calibration time widgets
         # next 30 min interval
@@ -38,7 +39,6 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
         )
         self.bgDateTimeEdit.setMinimumDateTime(next30min)
         self.calDateTimeEdit.setMinimumDateTime(next30min)
-
 
     def onCalibrate(self, s):
         if self.calDateTimeEdit.isEnabled():

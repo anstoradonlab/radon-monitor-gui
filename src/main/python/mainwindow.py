@@ -39,10 +39,6 @@ from ui_mainwindow import Ui_MainWindow
 # https://stackoverflow.com/questions/22791760/pyqt-adding-rows-to-qtableview-using-qabstracttablemodel
 
 
-
-
-
-
 _logger = logging.getLogger(__name__)
 
 # small class for our 'log message' signal to live in
@@ -75,13 +71,13 @@ class QTextEditLogger_non_threadsafe(logging.Handler):
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
-    def __init__(self, appctxt:ApplicationContext, *args, **kwargs):
+    def __init__(self, appctxt: ApplicationContext, *args, **kwargs):
         # fbs application context
         self.appctxt = appctxt
         super(MainWindow, self).__init__(*args, **kwargs)
 
-        self.qsettings = QSettings('au.gov.ansto', appctxt.app.applicationName())
-        _logger.debug(f'QSettings initialised at {self.qsettings.fileName()}')
+        self.qsettings = QSettings("au.gov.ansto", appctxt.app.applicationName())
+        _logger.debug(f"QSettings initialised at {self.qsettings.fileName()}")
 
         self.instrument_controller = None
         self.config: Configuration = None
@@ -108,13 +104,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         guilogger.addFilter(Blacklist())
 
         logging.getLogger().addHandler(guilogger)
-        # You can control the logging level (TODO: get from log file)
-        logging.getLogger().setLevel(logging.INFO)
+        # You can control the logging level (TODO: get from config file)
+        logging.getLogger().setLevel(logging.DEBUG)
 
         self.connect_signals()
 
         self.redraw_timer = QTimer()
-        self.redraw_timer.setInterval(1000)
+        self.redraw_timer.setInterval(5000)
         self.redraw_timer.timeout.connect(self.update_displays)
         self.redraw_timer.start()
 
@@ -127,12 +123,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             pass
 
         # Begin logging if we can find a configuration file
-        if self.qsettings.contains('config_fname'):
-            config_fname = self.qsettings.value('config_fname')
+        if self.qsettings.contains("config_fname"):
+            config_fname = self.qsettings.value("config_fname")
             self.begin_controlling(config_fname)
 
-
-    
     def show_data(self):
         if self.config is not None:
             data_dir = os.path.realpath(self.config.data_dir)
@@ -150,9 +144,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self, "Open configuration", ".", "YAML files (*.yaml *.yml)"
         )
         print(f"Loading from {config_fname}")
-        self.qsettings.setValue('config_fname', config_fname)
+        self.qsettings.setValue("config_fname", config_fname)
         self.begin_controlling(config_fname)
-        
+
     def view_calibration_dialog(self):
         if self.cal_dialog is not None:
             self.cal_dialog.show()
@@ -161,7 +155,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             # using current idioms
             # https://doc.qt.io/qtforpython/tutorials/basictutorial/dialog.html
             w = CAndBForm(mainwindow=self)
-            print('showing cal dialog')
+            print("showing cal dialog")
             cal_dialog = QtWidgets.QDialog(parent=self)
             cal_dialog.setWindowTitle("Calibration and Background Control")
             layout = QtWidgets.QVBoxLayout(cal_dialog)
@@ -169,16 +163,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             cal_dialog.show()
             self.cal_dialog = cal_dialog
 
-
     def begin_controlling(self, config_fname):
         if self.instrument_controller is not None:
             self.instrument_controller.shutdown()
+        _logger.debug(f"Reading configuration from {config_fname}")
         config = config_from_yamlfile(config_fname)
         self.config = config
         # update times need to be reset
         self.update_times = {}
         self.instrument_controller = initialize(config, mode="thread")
-
 
     def closeEvent(self, event):
         # catch the close event
@@ -186,18 +179,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if self.instrument_controller is not None:
             self.instrument_controller.shutdown()
 
-        self.qsettings.setValue("geometry", self.saveGeometry());
-        self.qsettings.setValue("windowState", self.saveState());       
+        self.qsettings.setValue("geometry", self.saveGeometry())
+        self.qsettings.setValue("windowState", self.saveState())
 
         event.accept()
         # abort exiting with "event.ignore()"
-
 
     def update_displays(self):
         ic = self.instrument_controller
         if ic is None:
             return
-        
+
         tables = ic.list_tables()
         if not set(self.configured_tables) == set(tables):
             # build data view UI
@@ -205,7 +197,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             # remove all tabs
             while len(tabwidget) > 0:
                 data_view = tabwidget.removeTab(0)
-                del(data_view)
+                del data_view
             self.configured_tables = []
             for table_name in tables:
                 data_view = DataViewForm(self, table_name)

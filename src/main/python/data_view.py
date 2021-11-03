@@ -1,12 +1,13 @@
 import datetime
 import math
+import time
 from typing import Dict
 
 import numpy as np
-from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtCore import Qt, QTimer, QSettings
-from pyqtgraph import PlotWidget
 import pyqtgraph as pg
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import QSettings, Qt, QTimer
+from pyqtgraph import PlotWidget
 
 from ui_data_view import Ui_DataViewForm
 
@@ -84,33 +85,32 @@ class TableModel(QtCore.QAbstractTableModel):
         Nnew = len(new_data)
         if Nnew == 0:
             return
-        
+
         if N == 0:
             # can't trust existing column names
             self.update_data(new_data)
             return
 
-        print(f"new data:{new_data}, length {N}, {N+len(new_data)-1}")
+        # print(f"new data:{new_data}, length {N}, {N+len(new_data)-1}")
         self.beginInsertRows(QtCore.QModelIndex(), N, N + len(new_data) - 1)
         self._data.extend(new_data)
         self.endInsertRows()
 
         assert len(self._data) == N + Nnew
-    
+
     def get_plot_data(self, column_idx):
         if len(self._data) == 0:
-            return '', []
+            return "", []
         values = [list(row.values())[column_idx] for row in self._data]
         colname = list(self._data[0].keys())[column_idx]
         return colname, values
 
 
-
 class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
-    def __init__(self, main_window, table_name:str, *args, **kwargs):
+    def __init__(self, main_window, table_name: str, *args, **kwargs):
         super(DataViewForm, self).__init__(*args, **kwargs)
         self.setupUi(self)
-        self.graph_widget = pg.PlotWidget(axisItems = {'bottom': pg.DateAxisItem()})
+        self.graph_widget = pg.PlotWidget(axisItems={"bottom": pg.DateAxisItem()})
         self.graph_widget.showGrid(x=True, y=True)
         self.plot_series = None
 
@@ -124,7 +124,7 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
         self.pastDataTableView.setModel(self.model)
         # the last time this table was updated
         self.last_update_time = None
-
+        self.last_redraw_time = 0
 
         self.connect_signals()
 
@@ -136,18 +136,15 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
         self.redraw_timer.timeout.connect(self.update_displays)
         self.redraw_timer.start()
 
-        self.pastDataTableView.selectionModel().currentChanged.connect(self.table_selected)
+        self.pastDataTableView.selectionModel().currentChanged.connect(
+            self.table_selected
+        )
 
     def table_selected(self, idx):
-        print('column selected')
+        # print('column selected')
         c0, r0 = idx.column(), idx.row()
-        print(f'{c0,r0}')
+        # print(f'{c0,r0}')
         self.selected_column = idx.column()
-
-
-
-
-        
 
     def plot(self, x, y, title=None):
         if self.plot_series is not None:
@@ -169,22 +166,32 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
         self.plot_series = self.graph_widget.plot(xplt, yplt)
         self.graph_widget.setTitle(title)
 
-
     def update_displays(self):
-
+        dt_threshold = 1.0
         ic = self.main_window.instrument_controller
-        if ic is None:
+        # return if not connected or if the last redraw *completed* less than
+        # dt_threshold seconds ago
+        if ic is None or (time.time() - self.last_redraw_time) < dt_threshold:
             return
-        
-        t, newdata = ic.get_rows(self.table_name, start_time=self.last_update_time)
+
+        if self.last_update_time is None:
+            if self.table_name == "Results":
+                # only retrieve data from the last week
+                start_time = datetime.datetime.utcnow() - datetime.timedelta(days=7)
+            else:
+                start_time = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+        else:
+            start_time = self.last_update_time
+        t, newdata = ic.get_rows(self.table_name, start_time=start_time)
         self.last_update_time = t
         self.model.append_data(newdata)
 
         # TODO: link to plot data, or somehow avoid copying the entire
-        # x/y series each time 
+        # x/y series each time
         if self.selected_column is not None and self.selected_column != 0:
             yname, y = self.model.get_plot_data(column_idx=self.selected_column)
             xname, x = self.model.get_plot_data(column_idx=0)
             x = [itm.timestamp() for itm in x]
             self.step_plot(x, y, title=yname)
 
+        self.last_redraw_time = time.time()
