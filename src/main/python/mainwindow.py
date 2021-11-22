@@ -70,11 +70,39 @@ class QTextEditLogger_non_threadsafe(logging.Handler):
         self.widget.appendPlainText(msg)
 
 
+# Utility class for preventing windows' sleep
+
+class WindowsInhibitor:
+    '''Prevent OS sleep/hibernate in windows; code from:
+    https://github.com/h3llrais3r/Deluge-PreventSuspendPlus/blob/master/preventsuspendplus/core.py
+    API documentation:
+    https://msdn.microsoft.com/en-us/library/windows/desktop/aa373208(v=vs.85).aspx'''
+    ES_CONTINUOUS = 0x80000000
+    ES_SYSTEM_REQUIRED = 0x00000001
+
+    def __init__(self):
+        pass
+
+    def inhibit():
+        import ctypes
+        ctypes.windll.kernel32.SetThreadExecutionState(
+            WindowsInhibitor.ES_CONTINUOUS | \
+            WindowsInhibitor.ES_SYSTEM_REQUIRED)
+
+    def uninhibit():
+        import ctypes
+        ctypes.windll.kernel32.SetThreadExecutionState(
+            WindowsInhibitor.ES_CONTINUOUS)
+
+
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self, appctxt: ApplicationContext, *args, **kwargs):
         # fbs application context
         self.appctxt = appctxt
         super(MainWindow, self).__init__(*args, **kwargs)
+
+        if os.name == 'nt':
+            WindowsInhibitor.inhibit()
 
         self.qsettings = QSettings("au.gov.ansto", appctxt.app.applicationName())
         _logger.debug(f"QSettings initialised at {self.qsettings.fileName()}")
@@ -105,7 +133,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         logging.getLogger().addHandler(guilogger)
         # You can control the logging level (TODO: get from config file)
-        logging.getLogger().setLevel(logging.DEBUG)
+        logging.getLogger().setLevel(logging.INFO)
 
         self.connect_signals()
 
@@ -116,11 +144,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.cal_dialog = None
 
-        try:
-            self.restoreGeometry(self.qsettings.value("geometry"))
-            self.restoreState(self.qsettings.value("windowState"))
-        except TypeError:
+        geom = self.qsettings.value("geometry")
+        winstate = self.qsettings.value("windowState")
+        # if the qsettings value does not exist it is set to None
+        if geom is None or winstate is None:
             pass
+        else:
+            try:
+                self.restoreGeometry(geom)
+                self.restoreState(winstate)
+            except Exception as ex:
+                _logger.error(f'Error restoring window state: {ex}')
 
         # Begin logging if we can find a configuration file
         if self.qsettings.contains("config_fname"):
@@ -167,7 +201,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if self.instrument_controller is not None:
             self.instrument_controller.shutdown()
         _logger.debug(f"Reading configuration from {config_fname}")
-        config = config_from_yamlfile(config_fname)
+        try:
+            config = config_from_yamlfile(config_fname)
+        except Exception as ex:
+            _logger.warning(f"Exception occured while trying to load configuration: {ex}")
+            return
+
         self.config = config
         # update times need to be reset
         self.update_times = {}
@@ -175,6 +214,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def closeEvent(self, event):
         # catch the close event
+        if os.name == 'nt':
+            WindowsInhibitor.uninhibit()
+            
+        # TODO: don't shut down IC on Linux 
         print("shutting down instrument controller")
         if self.instrument_controller is not None:
             self.instrument_controller.shutdown()
@@ -190,7 +233,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if ic is None:
             return
 
-        tables = ic.list_tables()
+        tables = ic.list_data_tables()
         if not set(self.configured_tables) == set(tables):
             # build data view UI
             tabwidget = self.tabWidget

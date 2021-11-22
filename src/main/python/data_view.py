@@ -98,12 +98,28 @@ class TableModel(QtCore.QAbstractTableModel):
 
         assert len(self._data) == N + Nnew
 
+        # remove rows if maximum has been exceeded
+        N_max = 1000 # TODO: config?
+        if len(self._data) > N_max:
+            N_to_remove = len(self._data) - N_max
+            self.beginRemoveRows(QtCore.QModelIndex(), 0, N_to_remove-1)
+            self._data = self._data[N_to_remove:]
+            assert(len(self._data) == N_max)
+            self.endRemoveRows()
+
     def get_plot_data(self, column_idx):
         if len(self._data) == 0:
             return "", []
         values = [list(row.values())[column_idx] for row in self._data]
         colname = list(self._data[0].keys())[column_idx]
         return colname, values
+    
+    def get_detector_name_data(self):
+        if 'DetectorName' in self._data[0]:
+            values = [row['DetectorName'] for row in self._data]
+        else:
+            values = None
+        return values
 
 
 class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
@@ -112,7 +128,7 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
         self.setupUi(self)
         self.graph_widget = pg.PlotWidget(axisItems={"bottom": pg.DateAxisItem()})
         self.graph_widget.showGrid(x=True, y=True)
-        self.plot_series = None
+        self.plot_series = []
 
         self.splitter.addWidget(self.graph_widget)
 
@@ -130,6 +146,20 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
 
         self.update_times: Dict[str, datetime.datetime] = {}
 
+        # import matplotlib.cm; tuple([tuple(itm) for itm in (np.array(matplotlib.cm.tab20c.colors[2::4]) * 255).astype(int)])
+        self._colormap = ((158, 202, 225),
+                            (253, 174, 107),
+                            (161, 217, 155),
+                            (188, 189, 220),
+                            (189, 189, 189))
+        self.legend = None
+
+    def get_color(self, idx):
+        N = len(self._colormap)
+        return self._colormap[idx%N]
+
+
+
     def connect_signals(self):
         self.redraw_timer = QTimer()
         self.redraw_timer.setInterval(1000)
@@ -146,24 +176,48 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
         # print(f'{c0,r0}')
         self.selected_column = idx.column()
 
-    def plot(self, x, y, title=None):
-        if self.plot_series is not None:
-            self.graph_widget.removeItem(self.plot_series)
-        self.plot_series = self.graph_widget.plot(x, y)
+    def groupby_series(self, x, y, legend_data):
+        if legend_data is None:
+            ret = [ (x,y,None) ]
+        else:
+            ret = []
+            for label in sorted(list(set(legend_data))):
+                xy = [ (xii, yii) for xii,yii,lab in zip(x,y,legend_data) if lab==label]
+                xii,yii = zip(*xy)
+                ret.append( (xii, yii, str(label)))
+        return ret
+
+    def plot(self, x, y, legend_data=None, title=None):
+        if self.legend is not None:
+            self.graph_widget.removeItem(self.legend)
+        self.legend = self.graph_widget.addLegend(frame=False, rowCount=1, colCount=2)
+        for itm in self.plot_series:
+            self.graph_widget.removeItem(itm)
+            self.plot_series = []
+        for idx, (x,y,label) in enumerate(self.groupby_series(x, y, legend_data)):
+            p = self.graph_widget.plot(x, y, pen=self.get_color(idx))
+            self.plot_series.append(p)
         self.graph_widget.setTitle(title)
 
-    def step_plot(self, x, y, title=None):
-        if self.plot_series is not None:
-            self.graph_widget.removeItem(self.plot_series)
+    def step_plot(self, x, y, legend_data=None, title=None):
+        if self.legend is not None:
+            self.graph_widget.removeItem(self.legend)
+        self.legend = self.graph_widget.addLegend(frame=False, rowCount=1, colCount=2)
 
-        dx = np.r_[np.diff(x), np.median(np.diff(x))]
-        xplt = np.empty(len(x) * 2)
-        xplt[::2] = x
-        xplt[1::2] = x + dx
-        yplt = np.empty(len(y) * 2)
-        yplt[::2] = y
-        yplt[1::2] = y
-        self.plot_series = self.graph_widget.plot(xplt, yplt)
+        for itm in self.plot_series:
+            self.graph_widget.removeItem(itm)
+            self.plot_series = []
+
+        for idx, (x,y,label) in enumerate(self.groupby_series(x, y, legend_data)):
+            dx = np.r_[np.diff(x), np.median(np.diff(x))]
+            xplt = np.empty(len(x) * 2)
+            xplt[::2] = x
+            xplt[1::2] = x + dx
+            yplt = np.empty(len(y) * 2)
+            yplt[::2] = y
+            yplt[1::2] = y
+            p = self.graph_widget.plot(xplt, yplt, name=label, pen=self.get_color(idx))
+            self.plot_series.append(p)
         self.graph_widget.setTitle(title)
 
     def update_displays(self):
@@ -188,10 +242,13 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
 
         # TODO: link to plot data, or somehow avoid copying the entire
         # x/y series each time
+        
         if self.selected_column is not None and self.selected_column != 0:
+            # find DetectorName column
             yname, y = self.model.get_plot_data(column_idx=self.selected_column)
             xname, x = self.model.get_plot_data(column_idx=0)
+            detector_name = self.model.get_detector_name_data()
             x = [itm.timestamp() for itm in x]
-            self.step_plot(x, y, title=yname)
+            self.step_plot(x, y, legend_data=detector_name, title=yname)
 
         self.last_redraw_time = time.time()
