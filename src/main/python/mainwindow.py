@@ -21,6 +21,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import QSettings, Qt, QTimer
 
 from c_and_b import CAndBForm
+from system_information import SystemInformationForm
 from data_view import DataViewForm
 from ui_mainwindow import Ui_MainWindow
 
@@ -113,7 +114,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Load the UI Page
         # uic.loadUi(appctxt.get_resource("main_window.ui"), baseinstance=self)
-
+        
         self.setupUi(self)
 
         logTextBox = self.logArea
@@ -143,6 +144,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.redraw_timer.start()
 
         self.cal_dialog = None
+        self.sysinfo_dialog = None
 
         geom = self.qsettings.value("geometry")
         winstate = self.qsettings.value("windowState")
@@ -171,6 +173,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionQuit.triggered.connect(self.close)
         self.actionShow_Data.triggered.connect(self.show_data)
         self.actionViewCalibration.triggered.connect(self.view_calibration_dialog)
+        self.actionViewSystemInformation.triggered.connect(self.view_system_information_dialog)
 
     def onLoadConfiguration(self, s):
         print(f"Load the configuration... {s}")
@@ -189,13 +192,25 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             # using current idioms
             # https://doc.qt.io/qtforpython/tutorials/basictutorial/dialog.html
             w = CAndBForm(mainwindow=self)
-            print("showing cal dialog")
             cal_dialog = QtWidgets.QDialog(parent=self)
             cal_dialog.setWindowTitle("Calibration and Background Control")
             layout = QtWidgets.QVBoxLayout(cal_dialog)
             layout.addWidget(w)
             cal_dialog.show()
             self.cal_dialog = cal_dialog
+
+
+    def view_system_information_dialog(self):
+        if self.sysinfo_dialog is not None:
+            self.sysinfo_dialog.show()
+        else:
+            w = SystemInformationForm(mainwindow=self)
+            sysinfo_dialog = QtWidgets.QDialog(parent=self)
+            sysinfo_dialog.setWindowTitle("System Information")
+            layout = QtWidgets.QVBoxLayout(sysinfo_dialog)
+            layout.addWidget(w)
+            sysinfo_dialog.show()
+            self.sysinfo_dialog = sysinfo_dialog
 
     def begin_controlling(self, config_fname):
         if self.instrument_controller is not None:
@@ -230,7 +245,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def update_displays(self):
         ic = self.instrument_controller
-        if ic is None:
+        if not self.is_logging:
             return
 
         tables = ic.list_data_tables()
@@ -246,3 +261,21 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 data_view = DataViewForm(self, table_name)
                 tabwidget.addTab(data_view, table_name)
                 self.configured_tables.append(table_name)
+
+    @property
+    def is_logging(self):
+        return self.instrument_controller is not None
+    
+    def stop_logging(self):
+        if self.is_logging:
+            self.instrument_controller.shutdown()
+            self.instrument_controller = None
+    
+    def start_logging(self):
+        if not self.is_logging:
+            if self.qsettings.contains("config_fname"):
+                config_fname = self.qsettings.value("config_fname")
+                self.begin_controlling(config_fname)
+            else:
+                # TODO: this method might not exist!
+                self.actionLoad_Configuration.emit()

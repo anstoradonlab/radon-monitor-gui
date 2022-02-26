@@ -49,7 +49,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_3.addWidget(self.splitter)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 683, 20))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 683, 21))
         self.menubar.setObjectName("menubar")
         self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")
@@ -67,11 +67,14 @@ class Ui_MainWindow(object):
         self.actionShow_Data.setObjectName("actionShow_Data")
         self.actionViewCalibration = QtWidgets.QAction(MainWindow)
         self.actionViewCalibration.setObjectName("actionViewCalibration")
+        self.actionViewSystemInformation = QtWidgets.QAction(MainWindow)
+        self.actionViewSystemInformation.setObjectName("actionViewSystemInformation")
         self.menuFile.addAction(self.actionLoad_Configuration)
         self.menuFile.addAction(self.actionShow_Data)
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.actionQuit)
         self.menuView.addAction(self.actionViewCalibration)
+        self.menuView.addAction(self.actionViewSystemInformation)
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuView.menuAction())
 
@@ -81,7 +84,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "ANSTO RDM"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MainWindow", "Tab 1"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.menuView.setTitle(_translate("MainWindow", "View"))
@@ -89,4 +92,5 @@ class Ui_MainWindow(object):
         self.actionQuit.setText(_translate("MainWindow", "Quit"))
         self.actionShow_Data.setText(_translate("MainWindow", "Show Data"))
         self.actionViewCalibration.setText(_translate("MainWindow", "Calibration"))
+        self.actionViewSystemInformation.setText(_translate("MainWindow", "System Information"))
 
