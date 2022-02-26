@@ -11,12 +11,12 @@ from typing import Dict, List
 
 import numpy as np
 import pyqtgraph
-from ansto_radon_monitor.configuration import (Configuration,
-                                               config_from_yamlfile)
+from ansto_radon_monitor.configuration import Configuration, config_from_yamlfile
 from ansto_radon_monitor.main import setup_logging
 from ansto_radon_monitor.main_controller import MainController, initialize
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
+
 # from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtCore import QSettings, Qt, QTimer
 
@@ -73,11 +73,13 @@ class QTextEditLogger_non_threadsafe(logging.Handler):
 
 # Utility class for preventing windows' sleep
 
+
 class WindowsInhibitor:
-    '''Prevent OS sleep/hibernate in windows; code from:
+    """Prevent OS sleep/hibernate in windows; code from:
     https://github.com/h3llrais3r/Deluge-PreventSuspendPlus/blob/master/preventsuspendplus/core.py
     API documentation:
-    https://msdn.microsoft.com/en-us/library/windows/desktop/aa373208(v=vs.85).aspx'''
+    https://msdn.microsoft.com/en-us/library/windows/desktop/aa373208(v=vs.85).aspx"""
+
     ES_CONTINUOUS = 0x80000000
     ES_SYSTEM_REQUIRED = 0x00000001
 
@@ -86,14 +88,15 @@ class WindowsInhibitor:
 
     def inhibit():
         import ctypes
+
         ctypes.windll.kernel32.SetThreadExecutionState(
-            WindowsInhibitor.ES_CONTINUOUS | \
-            WindowsInhibitor.ES_SYSTEM_REQUIRED)
+            WindowsInhibitor.ES_CONTINUOUS | WindowsInhibitor.ES_SYSTEM_REQUIRED
+        )
 
     def uninhibit():
         import ctypes
-        ctypes.windll.kernel32.SetThreadExecutionState(
-            WindowsInhibitor.ES_CONTINUOUS)
+
+        ctypes.windll.kernel32.SetThreadExecutionState(WindowsInhibitor.ES_CONTINUOUS)
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -102,7 +105,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.appctxt = appctxt
         super(MainWindow, self).__init__(*args, **kwargs)
 
-        if os.name == 'nt':
+        if os.name == "nt":
             WindowsInhibitor.inhibit()
 
         self.qsettings = QSettings("au.gov.ansto", appctxt.app.applicationName())
@@ -114,7 +117,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Load the UI Page
         # uic.loadUi(appctxt.get_resource("main_window.ui"), baseinstance=self)
-        
+
         self.setupUi(self)
 
         logTextBox = self.logArea
@@ -156,7 +159,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.restoreGeometry(geom)
                 self.restoreState(winstate)
             except Exception as ex:
-                _logger.error(f'Error restoring window state: {ex}')
+                _logger.error(f"Error restoring window state: {ex}")
 
         # Begin logging if we can find a configuration file
         if self.qsettings.contains("config_fname"):
@@ -173,7 +176,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionQuit.triggered.connect(self.close)
         self.actionShow_Data.triggered.connect(self.show_data)
         self.actionViewCalibration.triggered.connect(self.view_calibration_dialog)
-        self.actionViewSystemInformation.triggered.connect(self.view_system_information_dialog)
+        self.actionViewSystemInformation.triggered.connect(
+            self.view_system_information_dialog
+        )
 
     def onLoadConfiguration(self, s):
         print(f"Load the configuration... {s}")
@@ -199,7 +204,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             cal_dialog.show()
             self.cal_dialog = cal_dialog
 
-
     def view_system_information_dialog(self):
         if self.sysinfo_dialog is not None:
             self.sysinfo_dialog.show()
@@ -219,7 +223,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         try:
             config = config_from_yamlfile(config_fname)
         except Exception as ex:
-            _logger.warning(f"Exception occured while trying to load configuration: {ex}")
+            _logger.warning(
+                f"Exception occured while trying to load configuration: {ex}"
+            )
             return
 
         self.config = config
@@ -229,10 +235,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def closeEvent(self, event):
         # catch the close event
-        if os.name == 'nt':
+        if os.name == "nt":
             WindowsInhibitor.uninhibit()
-            
-        # TODO: don't shut down IC on Linux 
+
+        # TODO: don't shut down IC on Linux
         print("shutting down instrument controller")
         if self.instrument_controller is not None:
             self.instrument_controller.shutdown()
@@ -265,12 +271,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     @property
     def is_logging(self):
         return self.instrument_controller is not None
-    
+
     def stop_logging(self):
         if self.is_logging:
             self.instrument_controller.shutdown()
             self.instrument_controller = None
-    
+
     def start_logging(self):
         if not self.is_logging:
             if self.qsettings.contains("config_fname"):

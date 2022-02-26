@@ -99,12 +99,12 @@ class TableModel(QtCore.QAbstractTableModel):
         assert len(self._data) == N + Nnew
 
         # remove rows if maximum has been exceeded
-        N_max = 1000 # TODO: config?
+        N_max = 1000  # TODO: config?
         if len(self._data) > N_max:
             N_to_remove = len(self._data) - N_max
-            self.beginRemoveRows(QtCore.QModelIndex(), 0, N_to_remove-1)
+            self.beginRemoveRows(QtCore.QModelIndex(), 0, N_to_remove - 1)
             self._data = self._data[N_to_remove:]
-            assert(len(self._data) == N_max)
+            assert len(self._data) == N_max
             self.endRemoveRows()
 
     def get_plot_data(self, column_idx):
@@ -113,10 +113,10 @@ class TableModel(QtCore.QAbstractTableModel):
         values = [list(row.values())[column_idx] for row in self._data]
         colname = list(self._data[0].keys())[column_idx]
         return colname, values
-    
+
     def get_detector_name_data(self):
-        if 'DetectorName' in self._data[0]:
-            values = [row['DetectorName'] for row in self._data]
+        if "DetectorName" in self._data[0]:
+            values = [row["DetectorName"] for row in self._data]
         else:
             values = None
         return values
@@ -147,18 +147,18 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
         self.update_times: Dict[str, datetime.datetime] = {}
 
         # import matplotlib.cm; tuple([tuple(itm) for itm in (np.array(matplotlib.cm.tab20c.colors[2::4]) * 255).astype(int)])
-        self._colormap = ((158, 202, 225),
-                            (253, 174, 107),
-                            (161, 217, 155),
-                            (188, 189, 220),
-                            (189, 189, 189))
+        self._colormap = (
+            (158, 202, 225),
+            (253, 174, 107),
+            (161, 217, 155),
+            (188, 189, 220),
+            (189, 189, 189),
+        )
         self.legend = None
 
     def get_color(self, idx):
         N = len(self._colormap)
-        return self._colormap[idx%N]
-
-
+        return self._colormap[idx % N]
 
     def connect_signals(self):
         self.redraw_timer = QTimer()
@@ -178,13 +178,17 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
 
     def groupby_series(self, x, y, legend_data):
         if legend_data is None:
-            ret = [ (x,y,None) ]
+            ret = [(x, y, None)]
         else:
             ret = []
             for label in sorted(list(set(legend_data))):
-                xy = [ (xii, yii) for xii,yii,lab in zip(x,y,legend_data) if lab==label]
-                xii,yii = zip(*xy)
-                ret.append( (xii, yii, str(label)))
+                xy = [
+                    (xii, yii)
+                    for xii, yii, lab in zip(x, y, legend_data)
+                    if lab == label
+                ]
+                xii, yii = zip(*xy)
+                ret.append((xii, yii, str(label)))
         return ret
 
     def plot(self, x, y, legend_data=None, title=None):
@@ -194,7 +198,7 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
         for itm in self.plot_series:
             self.graph_widget.removeItem(itm)
             self.plot_series = []
-        for idx, (x,y,label) in enumerate(self.groupby_series(x, y, legend_data)):
+        for idx, (x, y, label) in enumerate(self.groupby_series(x, y, legend_data)):
             p = self.graph_widget.plot(x, y, pen=self.get_color(idx))
             self.plot_series.append(p)
         self.graph_widget.setTitle(title)
@@ -208,7 +212,7 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
             self.graph_widget.removeItem(itm)
             self.plot_series = []
 
-        for idx, (x,y,label) in enumerate(self.groupby_series(x, y, legend_data)):
+        for idx, (x, y, label) in enumerate(self.groupby_series(x, y, legend_data)):
             dx = np.r_[np.diff(x), np.median(np.diff(x))]
             xplt = np.empty(len(x) * 2)
             xplt[::2] = x
@@ -242,7 +246,7 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
 
         # TODO: link to plot data, or somehow avoid copying the entire
         # x/y series each time
-        
+
         if self.selected_column is not None and self.selected_column != 0:
             # find DetectorName column
             yname, y = self.model.get_plot_data(column_idx=self.selected_column)

@@ -11,7 +11,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_SystemInformationForm(object):
     def setupUi(self, SystemInformationForm):
         SystemInformationForm.setObjectName("SystemInformationForm")
-        SystemInformationForm.resize(274, 361)
+        SystemInformationForm.resize(270, 470)
         self.verticalLayout = QtWidgets.QVBoxLayout(SystemInformationForm)
         self.verticalLayout.setObjectName("verticalLayout")
         self.notLoggingLabel = QtWidgets.QLabel(SystemInformationForm)
