@@ -11,18 +11,18 @@ from typing import Dict, List
 
 import numpy as np
 import pyqtgraph
-from ansto_radon_monitor.configuration import Configuration, config_from_yamlfile
+from ansto_radon_monitor.configuration import (Configuration,
+                                               config_from_yamlfile)
 from ansto_radon_monitor.main import setup_logging
 from ansto_radon_monitor.main_controller import MainController, initialize
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
-
 # from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtCore import QSettings, Qt, QTimer
 
 from c_and_b import CAndBForm
-from system_information import SystemInformationForm
 from data_view import DataViewForm
+from system_information import SystemInformationForm
 from ui_mainwindow import Ui_MainWindow
 
 # import pandas as pd
@@ -166,6 +166,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             config_fname = self.qsettings.value("config_fname")
             self.begin_controlling(config_fname)
 
+        # create dialog (but don't show it)
+        self.create_calibration_dialog()
+
     def show_data(self):
         if self.config is not None:
             data_dir = os.path.realpath(self.config.data_dir)
@@ -189,20 +192,19 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.qsettings.setValue("config_fname", config_fname)
         self.begin_controlling(config_fname)
 
+    def create_calibration_dialog(self):
+        # side note: this is quite a nice example of how to generate UI with code
+        # using current idioms
+        # https://doc.qt.io/qtforpython/tutorials/basictutorial/dialog.html
+        w = CAndBForm(mainwindow=self)
+        cal_dialog = QtWidgets.QDialog(parent=self)
+        cal_dialog.setWindowTitle("Calibration and Background Control")
+        layout = QtWidgets.QVBoxLayout(cal_dialog)
+        layout.addWidget(w)
+        self.cal_dialog = cal_dialog
+
     def view_calibration_dialog(self):
-        if self.cal_dialog is not None:
-            self.cal_dialog.show()
-        else:
-            # side note: this is quite a nice example of how to generate UI with code
-            # using current idioms
-            # https://doc.qt.io/qtforpython/tutorials/basictutorial/dialog.html
-            w = CAndBForm(mainwindow=self)
-            cal_dialog = QtWidgets.QDialog(parent=self)
-            cal_dialog.setWindowTitle("Calibration and Background Control")
-            layout = QtWidgets.QVBoxLayout(cal_dialog)
-            layout.addWidget(w)
-            cal_dialog.show()
-            self.cal_dialog = cal_dialog
+        self.cal_dialog.show()
 
     def view_system_information_dialog(self):
         if self.sysinfo_dialog is not None:
