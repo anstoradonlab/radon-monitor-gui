@@ -1,5 +1,7 @@
 # TODO list for both radon monitor and radon monitor gui
 
+* Function to download logger firmware
+* Regular clock synchronisation
 * Log configuration to database on:
     - startup
     - rollover to new month

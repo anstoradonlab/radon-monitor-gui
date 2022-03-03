@@ -38,9 +38,20 @@
           </property>
           <widget class="QWidget" name="tab">
            <attribute name="title">
-            <string>Tab 1</string>
+            <string>No data to display</string>
            </attribute>
-           <layout class="QHBoxLayout" name="horizontalLayout_2"/>
+           <layout class="QHBoxLayout" name="horizontalLayout_2">
+            <item>
+             <widget class="QLabel" name="label">
+              <property name="text">
+               <string>No data</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </widget>
          </widget>
         </item>

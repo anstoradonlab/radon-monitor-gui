@@ -33,6 +33,10 @@ class Ui_MainWindow(object):
         self.tab.setObjectName("tab")
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout(self.tab)
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
+        self.label = QtWidgets.QLabel(self.tab)
+        self.label.setAlignment(QtCore.Qt.AlignCenter)
+        self.label.setObjectName("label")
+        self.horizontalLayout_2.addWidget(self.label)
         self.tabWidget.addTab(self.tab, "")
         self.verticalLayout_2.addWidget(self.tabWidget)
         self.layoutWidget1 = QtWidgets.QWidget(self.splitter)
@@ -85,7 +89,8 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "ANSTO RDM"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MainWindow", "Tab 1"))
+        self.label.setText(_translate("MainWindow", "No data"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MainWindow", "No data to display"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.menuView.setTitle(_translate("MainWindow", "View"))
         self.actionLoad_Configuration.setText(_translate("MainWindow", "Load Configuration"))

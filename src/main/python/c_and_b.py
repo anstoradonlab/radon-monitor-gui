@@ -130,6 +130,16 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
     def schedule_engaged(self):
         return self.enableScheduleButton.isChecked()
 
+    def update_main_display(self):
+        """tells the main Gui to update"""
+        # TODO: there might be a simpler way to do this,
+        #  'schedule next event loop' or similar
+        t = QtCore.QTimer(self)
+        t.setInterval(100)
+        t.setSingleShot(True)
+        t.timeout.connect(self.mainwindow.update_displays)
+        t.start()
+
     def update_displays(self):
         # update the calibration time widgets
         # next 30 min interval
@@ -162,21 +172,34 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
             start_time = self.calDateTimeEdit.dateTime().toUTC().toPyDateTime()
         else:
             start_time = None
-        self.mainwindow.instrument_controller.run_calibration(start_time=start_time)
+        flush_duration_sec = self.flushSpinBox.value() * 3600
+        inject_duration_sec = self.injectSpinBox.value() * 3600
+        self.mainwindow.instrument_controller.run_calibration(
+            start_time=start_time,
+            flush_duration=flush_duration_sec,
+            inject_duration=inject_duration_sec,
+        )
+        self.update_main_display()
 
     def onStopCal(self, s):
         self.mainwindow.instrument_controller.stop_calibration()
         # TODO: re-schedule calibrations if enabled
+        self.update_main_display()
 
     def onBackground(self, s):
         if self.bgDateTimeEdit.isEnabled():
             start_time = self.bgDateTimeEdit.dateTime().toUTC().toPyDateTime()
         else:
             start_time = None
-        self.mainwindow.instrument_controller.run_background(start_time=start_time)
+        duration_sec = self.backgroundSpinBox.value() * 3600
+        self.mainwindow.instrument_controller.run_background(
+            start_time=start_time, duration=duration_sec
+        )
+        self.update_main_display()
 
     def onStopBg(self, s):
         self.mainwindow.instrument_controller.stop_background()
+        self.update_main_display()
 
     def save_state_to_qsettings(self):
         qs = self.mainwindow.qsettings

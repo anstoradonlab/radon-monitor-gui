@@ -87,7 +87,12 @@ class TableModel(QtCore.QAbstractTableModel):
             return
 
         if N == 0:
-            # can't trust existing column names
+            # can't trust existing column names - reset
+            self.update_data(new_data)
+            return
+
+        if not (self._column_names) == list(new_data[0]):
+            # new data looks different to old data - reset
             self.update_data(new_data)
             return
 
@@ -212,20 +217,25 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
             self.graph_widget.removeItem(itm)
             self.plot_series = []
 
+        data_is_not_numeric = True
         for idx, (x, y, label) in enumerate(self.groupby_series(x, y, legend_data)):
             dx = np.r_[np.diff(x), np.median(np.diff(x))]
             xplt = np.empty(len(x) * 2)
             xplt[::2] = x
             xplt[1::2] = x + dx
             yplt = np.empty(len(y) * 2)
-            yplt[::2] = y
-            yplt[1::2] = y
+            try:
+                yplt[::2] = y
+                yplt[1::2] = y
+            except ValueError:
+                data_is_not_numeric = True
+                break
             p = self.graph_widget.plot(xplt, yplt, name=label, pen=self.get_color(idx))
             self.plot_series.append(p)
         self.graph_widget.setTitle(title)
 
     def update_displays(self):
-        dt_threshold = 1.0
+        dt_threshold = 0.95
         ic = self.main_window.instrument_controller
         # return if not connected or if the last redraw *completed* less than
         # dt_threshold seconds ago
@@ -241,8 +251,9 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
         else:
             start_time = self.last_update_time
         t, newdata = ic.get_rows(self.table_name, start_time=start_time)
-        self.last_update_time = t
-        self.model.append_data(newdata)
+        if t is not None:
+            self.last_update_time = t
+            self.model.append_data(newdata)
 
         # TODO: link to plot data, or somehow avoid copying the entire
         # x/y series each time
@@ -256,3 +267,7 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
             self.step_plot(x, y, legend_data=detector_name, title=yname)
 
         self.last_redraw_time = time.time()
+
+    def __del__(self):
+        """ Handy for ensuring the widget is really getting deleted"""
+        print("INSIDE DEL METHOD *************************")

@@ -11,6 +11,7 @@ from typing import Dict, List
 
 import numpy as np
 import pyqtgraph
+import sip
 from ansto_radon_monitor.configuration import (Configuration,
                                                config_from_yamlfile)
 from ansto_radon_monitor.main import setup_logging
@@ -119,6 +120,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # uic.loadUi(appctxt.get_resource("main_window.ui"), baseinstance=self)
 
         self.setupUi(self)
+        self.setup_statusbar()
 
         logTextBox = self.logArea
         guilogger = QTextEditLogger(logTextBox)
@@ -169,6 +171,26 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # create dialog (but don't show it)
         self.create_calibration_dialog()
 
+    def setup_statusbar(self):
+        sb = self.statusbar
+        lab = QtWidgets.QLabel("")
+        self.statusbarlabel_right = lab
+        sb.addPermanentWidget(lab)
+
+        lab2 = QtWidgets.QLabel("Startup")
+        sb.addWidget(lab2)
+        self.statusbarlabel_left = lab2
+
+    def set_status(self, message, happy=None):
+        if happy is None:
+            icon = ""
+        elif happy:
+            icon = "🙂"
+        else:
+            icon = "😬"
+        self.statusbarlabel_left.setText(message)
+        self.statusbarlabel_right.setText(icon)
+
     def show_data(self):
         if self.config is not None:
             data_dir = os.path.realpath(self.config.data_dir)
@@ -184,11 +206,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         )
 
     def onLoadConfiguration(self, s):
-        print(f"Load the configuration... {s}")
+        # print(f"Load the configuration... {s}")
         config_fname, config_filter = QtWidgets.QFileDialog.getOpenFileName(
             self, "Open configuration", ".", "YAML files (*.yaml *.yml)"
         )
-        print(f"Loading from {config_fname}")
+        if config_fname == "":
+            # user pressed cancel, do nothing
+            return
+
+        # print(f"Loading from {config_fname}")
         self.qsettings.setValue("config_fname", config_fname)
         self.begin_controlling(config_fname)
 
@@ -219,8 +245,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.sysinfo_dialog = sysinfo_dialog
 
     def begin_controlling(self, config_fname):
+
         if self.instrument_controller is not None:
             self.instrument_controller.shutdown()
+        # update times need to be reset
+        self.update_times = {}
+        # data display should be cleared
+        self.reset_views()
+        self.set_status("Connecting to instrument...", False)
         _logger.debug(f"Reading configuration from {config_fname}")
         try:
             config = config_from_yamlfile(config_fname)
@@ -228,11 +260,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             _logger.warning(
                 f"Exception occured while trying to load configuration: {ex}"
             )
+            self.set_status(f"Unable to load configuration: {config_fname}", False)
             return
 
         self.config = config
-        # update times need to be reset
-        self.update_times = {}
+
         self.instrument_controller = initialize(config, mode="thread")
 
     def closeEvent(self, event):
@@ -241,7 +273,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             WindowsInhibitor.uninhibit()
 
         # TODO: don't shut down IC on Linux
-        print("shutting down instrument controller")
+        # print("shutting down instrument controller")
         if self.instrument_controller is not None:
             self.instrument_controller.shutdown()
 
@@ -252,23 +284,48 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # abort exiting with "event.ignore()"
 
     def update_displays(self):
+        # print('update display')
         ic = self.instrument_controller
         if not self.is_logging:
             return
-
+        self.set_status(ic.get_status()["summary"], None)
         tables = ic.list_data_tables()
         if not set(self.configured_tables) == set(tables):
             # build data view UI
             tabwidget = self.tabWidget
-            # remove all tabs
-            while len(tabwidget) > 0:
-                data_view = tabwidget.removeTab(0)
-                del data_view
             self.configured_tables = []
-            for table_name in tables:
+            # remove tabs which are not in the current set
+            idx = 0
+            while not tabwidget.tabText(idx) == "":
+                txt = tabwidget.tabText(idx)
+                if not txt in tables:
+                    data_view = tabwidget.widget(idx)
+                    tabwidget.removeTab(idx)
+                    sip.delete(data_view)
+                else:
+                    self.configured_tables.append(txt)
+                    idx += 1
+            missing_tables = [
+                itm for itm in tables if not itm in self.configured_tables
+            ]
+
+            for table_name in missing_tables:
                 data_view = DataViewForm(self, table_name)
                 tabwidget.addTab(data_view, table_name)
                 self.configured_tables.append(table_name)
+
+    def reset_views(self):
+        """reset all widgets in the main window to (about) their initial state"""
+        tabwidget = self.tabWidget
+        # remove all tabs
+        while len(tabwidget) > 0:
+            widget = tabwidget.widget(0)
+            tabwidget.removeTab(0)
+            sip.delete(widget)
+        self.configured_tables = []
+        # for visual purposes
+        lab = QtWidgets.QLabel("")
+        tabwidget.addTab(lab, "Waiting for data")
 
     @property
     def is_logging(self):
