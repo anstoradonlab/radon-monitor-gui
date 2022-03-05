@@ -268,6 +268,6 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
 
         self.last_redraw_time = time.time()
 
-    def __del__(self):
-        """ Handy for ensuring the widget is really getting deleted"""
-        print("INSIDE DEL METHOD *************************")
+#    def __del__(self):
+#        """ Handy for ensuring the widget is really getting deleted"""
+#        print("INSIDE DEL METHOD *************************")

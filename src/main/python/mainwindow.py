@@ -287,9 +287,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # print('update display')
         ic = self.instrument_controller
         if not self.is_logging:
+            self.set_status("Disconnected", False)
+            self.hudTextBrowser.setHtml('')
             return
         self.set_status(ic.get_status()["summary"], None)
         tables = ic.list_data_tables()
+        html = ic.html_current_measurement()
+        self.hudTextBrowser.setHtml(html)
         if not set(self.configured_tables) == set(tables):
             # build data view UI
             tabwidget = self.tabWidget

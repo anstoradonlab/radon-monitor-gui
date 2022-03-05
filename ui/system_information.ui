@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>270</width>
-    <height>470</height>
+    <width>347</width>
+    <height>697</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -86,13 +86,51 @@
       <string>Data Loggers</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
-      <item row="1" column="1">
-       <widget class="QComboBox" name="serialPortComboBox"/>
+      <item row="6" column="1" colspan="2">
+       <widget class="QPushButton" name="downloadButton">
+        <property name="text">
+         <string>Retrieve Data Logger Program</string>
+        </property>
+       </widget>
       </item>
-      <item row="1" column="2">
+      <item row="4" column="1" colspan="2">
        <widget class="QPushButton" name="queryButton">
         <property name="text">
          <string>Query Port</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1" colspan="2">
+       <widget class="QComboBox" name="serialPortComboBox"/>
+      </item>
+      <item row="8" column="1" colspan="2">
+       <widget class="QLabel" name="label_4">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <italic>false</italic>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Caution: clears data logger memory</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="1" colspan="2">
+       <widget class="QPushButton" name="timeSyncButton">
+        <property name="text">
+         <string>Force Clock Sync</string>
+        </property>
+       </widget>
+      </item>
+      <item row="9" column="1" colspan="2">
+       <widget class="QPushButton" name="sendProgramButton">
+        <property name="text">
+         <string>Send New Datalogger Program</string>
         </property>
        </widget>
       </item>
@@ -103,7 +141,7 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="1" colspan="2">
+      <item row="5" column="1" colspan="2">
        <widget class="QTextBrowser" name="dataLoggerTextBrowser">
         <property name="tabChangesFocus">
          <bool>true</bool>

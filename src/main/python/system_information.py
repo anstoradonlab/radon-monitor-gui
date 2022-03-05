@@ -1,5 +1,6 @@
 import datetime
 import math
+import serial.tools.list_ports
 import time
 
 from ansto_radon_monitor.labjack_interface import list_all_u12
@@ -17,10 +18,27 @@ class SystemInformationForm(QtWidgets.QWidget, Ui_SystemInformationForm):
             self.serialPortComboBox,
             self.queryButton,
             self.queryLabjackButton,
+            self.sendProgramButton,
+            self.downloadButton,
+            self.timeSyncButton,
+        ]
+        self._controls_needing_connection = [
+            self.sendProgramButton,
+            self.downloadButton,
+            self.timeSyncButton,
         ]
         self._serial_port_info = {}
         self.mainwindow = mainwindow
         self.connect_signals()
+
+        t = QtCore.QTimer()
+        t.setInterval(1000)
+        t.timeout.connect(self.enumerate_serial_ports)
+        t.start()
+        self.serial_port_watcher_timer = t
+        self.detected_serial_ports = []
+        self.cr1000 = None
+
 
     def connect_signals(self):
         self.stopLoggingButton.clicked.connect(self.onStopLogging)
@@ -51,24 +69,36 @@ class SystemInformationForm(QtWidgets.QWidget, Ui_SystemInformationForm):
             self.mainwindow.start_logging()
 
     def enumerate_serial_ports(self):
-        import serial.tools.list_ports
-
-        n = 0
-        self._serial_port_info = {}
-        for info in sorted(serial.tools.list_ports.comports()):
-            print(
-                f"{info.device}\n    description: {info.description}\n           hwid: {info.hwid}"
-            )
-            n += 1
-            k = info.device
-            self._serial_port_info[k] = info
-        self.serialPortComboBox.addItems(list(self._serial_port_info.keys()))
-        self._n_com_ports = n
-        if n == 0:
-            self.dataLoggerTextBrowser.setPlainText("No COM ports detected.")
+        if self.stopLoggingButton.isChecked():
+            n = 0
+            
+            self._serial_port_info = {}
+            for info in sorted(serial.tools.list_ports.comports()):
+                #print(
+                #    f"{info.device}\n    description: {info.description}\n           hwid: {info.hwid}"
+                #)
+                n += 1
+                k = info.device
+                self._serial_port_info[k] = info
+            serial_ports = list(self._serial_port_info.keys())
+            if not serial_ports == self.detected_serial_ports:
+                self.detected_serial_ports = serial_ports
+                while len(self.serialPortComboBox) > 0:
+                    self.serialPortComboBox.removeItem(0)
+                self.serialPortComboBox.addItems(serial_ports)
+                self._n_com_ports = n
+            if n == 0:
+                self.dataLoggerTextBrowser.setPlainText("No COM ports detected.")
+            
+            for itm in self._controls_needing_connection:
+                enable = self.cr1000 is not None
+                itm.setEnabled(enable)
 
     def on_combobox_changed(self):
         self.dataLoggerTextBrowser.setPlainText("")
+        if self.cr1000 is not None:
+            self.cr1000.close()
+            self.cr1000 = None
 
     def on_query(self):
         if self._n_com_ports == 0:
@@ -85,6 +115,7 @@ class SystemInformationForm(QtWidgets.QWidget, Ui_SystemInformationForm):
             cr1000 = CR1000.from_url(serial_port_url, timeout=2)
             logger_info = self._datalogger.getprogstat()
             s += f"{logger_info}"
+            self.cr1000 = cr1000
         except Exception as e:
             s += f'Error occured: "{e}"'
         self.dataLoggerTextBrowser.setPlainText(s)
@@ -107,3 +138,8 @@ class SystemInformationForm(QtWidgets.QWidget, Ui_SystemInformationForm):
         else:
             s += f"{n} LabJacks found"
         self.labjackTextBrowser.setPlainText(s)
+    
+    def hideEvent(self, event):
+        if self.stopLoggingButton.isChecked():
+            self.stopLoggingButton.click()
+
