@@ -1,3 +1,4 @@
+import collections
 import copy
 import datetime
 import logging
@@ -7,10 +8,10 @@ import pprint
 import sys
 import threading
 import time
-from typing import Dict, List
+from typing import Dict, List, Union
 
 import numpy as np
-import pyqtgraph
+import pyqtgraph as pg
 import sip
 from ansto_radon_monitor.configuration import (Configuration,
                                                config_from_yamlfile)
@@ -22,6 +23,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import QSettings, Qt, QTimer
 
 from c_and_b import CAndBForm
+from data_plotter import DataPlotter
 from data_view import DataViewForm
 from system_information import SystemInformationForm
 from ui_mainwindow import Ui_MainWindow
@@ -116,6 +118,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.config: Configuration = None
         self.configured_tables: List[str] = []
 
+        # multi-panel plot window
+        self.pgwin: Union[pg.GraphicsLayoutWidget, None] = None
+        # data plotter object
+        self.data_plotter = None
+        # cache of data for multi-panel plot
+        self.plot_data = None
+
         # Load the UI Page
         # uic.loadUi(appctxt.get_resource("main_window.ui"), baseinstance=self)
 
@@ -142,6 +151,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         logging.getLogger().setLevel(logging.INFO)
 
         self.connect_signals()
+
+        # muck around with splitter positions
+        self.splitter.setSizes([500, 10])
 
         self.redraw_timer = QTimer()
         self.redraw_timer.setInterval(5000)
@@ -244,6 +256,55 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             sysinfo_dialog.show()
             self.sysinfo_dialog = sysinfo_dialog
 
+    def update_plot_data(self, table_name):
+        """Update the local cache of plot data
+
+        Returns:
+         - a flag,  True if the data has changed
+         - the data (in a collections.deque)
+        """
+        k = table_name
+        default_npoints = {"RTV": 600 * 24, "Results": 24 * 2 * 10}
+        npoints = default_npoints.get(k, 1000)
+        if self.plot_data is None:
+            self.plot_data = {"buffer": {}, "t": None}
+
+        buffer = self.plot_data["buffer"].get(k, collections.deque(maxlen=npoints))
+        told = self.plot_data["t"]
+        tnew, newdata = self.instrument_controller.get_rows(table_name, told)
+        data_has_changed = False
+        if not tnew == told:
+            self.plot_data["t"] = tnew
+            for row in newdata:
+                buffer.append(row)
+                data_has_changed = True
+
+        self.plot_data["buffer"][k] = buffer
+        return data_has_changed, buffer
+
+    def draw_plots(self, data):
+        if self.pgwin is not None:
+            self.close_plots()
+        self.pgwin = pg.GraphicsLayoutWidget()
+        self.plotSplitter.addWidget(self.pgwin)
+        self.plotSplitter.setSizes([200, 20])
+        # the constructor also draws the initial plot
+        self.data_plotter = DataPlotter(self.pgwin, data)
+
+    def update_plots(self, table_name):
+        update_needed, data = self.update_plot_data(table_name)
+        if update_needed:
+            if self.pgwin is None:
+                self.draw_plots(data)
+            else:
+                self.data_plotter.update(data)
+
+    def close_plots(self):
+        if self.pgwin is not None:
+            # self.pgwin.close() ???
+            self.pgwin.destroyLater()
+            self.pgwin = None
+
     def begin_controlling(self, config_fname):
 
         if self.instrument_controller is not None:
@@ -288,12 +349,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         ic = self.instrument_controller
         if not self.is_logging:
             self.set_status("Disconnected", False)
-            self.hudTextBrowser.setHtml('')
+            self.hudTextBrowser.setHtml("")
+            self.close_plots()
             return
+        self.update_plots("Results")
         self.set_status(ic.get_status()["summary"], None)
         tables = ic.list_data_tables()
         html = ic.html_current_measurement()
         self.hudTextBrowser.setHtml(html)
+        num_detectors = len(self.config.detectors)
+        hud_height = num_detectors * 150
+        self.hudTextBrowser.setMinimumHeight(hud_height)
+
         if not set(self.configured_tables) == set(tables):
             # build data view UI
             tabwidget = self.tabWidget

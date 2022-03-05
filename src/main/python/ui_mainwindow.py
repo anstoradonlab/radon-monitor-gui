@@ -11,7 +11,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(800, 818)
+        MainWindow.resize(800, 827)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
@@ -35,6 +35,8 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.hudTextBrowser.sizePolicy().hasHeightForWidth())
         self.hudTextBrowser.setSizePolicy(sizePolicy)
+        self.hudTextBrowser.setMinimumSize(QtCore.QSize(0, 150))
+        self.hudTextBrowser.setBaseSize(QtCore.QSize(0, 150))
         self.hudTextBrowser.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustIgnored)
         self.hudTextBrowser.setObjectName("hudTextBrowser")
         self.verticalLayout.addWidget(self.hudTextBrowser)
@@ -115,59 +117,7 @@ class Ui_MainWindow(object):
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><title>template table</title><style type=\"text/css\">\n"
 "p, li { white-space: pre-wrap; }\n"
 "</style></head><body style=\" font-family:\'MS Shell Dlg 2\'; font-size:8.25pt; font-weight:400; font-style:normal;\">\n"
-"<p style=\" margin-top:18px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Verdana,Geneva,Tahoma,sans-serif\'; font-size:xx-large; font-weight:600;\">LucasHeights_020M Radon Detector</span> </p>\n"
-"<table border=\"0\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px;\" cellspacing=\"2\" cellpadding=\"0\">\n"
-"<tr>\n"
-"<td>\n"
-"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Verdana,Geneva,Tahoma,sans-serif\'; font-size:15px;\">Signal Counts</span></p></td>\n"
-"<td>\n"
-"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Verdana,Geneva,Tahoma,sans-serif\'; font-size:15px;\">1</span></p></td>\n"
-"<td>\n"
-"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Verdana,Geneva,Tahoma,sans-serif\'; font-size:15px;\">N</span></p></td>\n"
-"<td>\n"
-"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Verdana,Geneva,Tahoma,sans-serif\'; font-size:15px;\">0</span></p></td>\n"
-"<td>\n"
-"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Verdana,Geneva,Tahoma,sans-serif\'; font-size:15px;\">0</span></p></td>\n"
-"<td>\n"
-"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Verdana,Geneva,Tahoma,sans-serif\'; font-size:15px;\">0.0</span></p></td>\n"
-"<td>\n"
-"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Verdana,Geneva,Tahoma,sans-serif\'; font-size:15px;\">10.0</span></p></td>\n"
-"<td>\n"
-"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Verdana,Geneva,Tahoma,sans-serif\'; font-size:15px;\">NaN</span></p></td></tr>\n"
-"<tr>\n"
-"<td>\n"
-"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Verdana,Geneva,Tahoma,sans-serif\'; font-size:40px;\">13658</span></p></td>\n"
-"<td>\n"
-"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Verdana,Geneva,Tahoma,sans-serif\'; font-size:40px;\">1</span></p></td>\n"
-"<td>\n"
-"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Verdana,Geneva,Tahoma,sans-serif\'; font-size:40px;\">N</span></p></td>\n"
-"<td>\n"
-"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Verdana,Geneva,Tahoma,sans-serif\'; font-size:40px;\">0</span></p></td>\n"
-"<td>\n"
-"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Verdana,Geneva,Tahoma,sans-serif\'; font-size:40px;\">0</span></p></td>\n"
-"<td>\n"
-"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Verdana,Geneva,Tahoma,sans-serif\'; font-size:40px;\">0.0</span></p></td>\n"
-"<td>\n"
-"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Verdana,Geneva,Tahoma,sans-serif\'; font-size:40px;\">9.9</span></p></td>\n"
-"<td>\n"
-"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Verdana,Geneva,Tahoma,sans-serif\'; font-size:40px;\">NaN</span></p></td></tr>\n"
-"<tr>\n"
-"<td>\n"
-"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Verdana,Geneva,Tahoma,sans-serif\'; font-size:15px;\">Last 30 minutes</span></p></td>\n"
-"<td>\n"
-"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Verdana,Geneva,Tahoma,sans-serif\'; font-size:15px;\">1</span></p></td>\n"
-"<td>\n"
-"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Verdana,Geneva,Tahoma,sans-serif\'; font-size:15px;\">N</span></p></td>\n"
-"<td>\n"
-"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Verdana,Geneva,Tahoma,sans-serif\'; font-size:15px;\">0</span></p></td>\n"
-"<td>\n"
-"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Verdana,Geneva,Tahoma,sans-serif\'; font-size:15px;\">0</span></p></td>\n"
-"<td>\n"
-"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Verdana,Geneva,Tahoma,sans-serif\'; font-size:15px;\">0.0</span></p></td>\n"
-"<td>\n"
-"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Verdana,Geneva,Tahoma,sans-serif\'; font-size:15px;\">9.9</span></p></td>\n"
-"<td>\n"
-"<p align=\"right\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Verdana,Geneva,Tahoma,sans-serif\'; font-size:15px;\">NaN</span></p></td></tr></table></body></html>"))
+"<p align=\"center\" style=\" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">[This space has been intentionally left blank]</p></body></html>"))
         self.label.setText(_translate("MainWindow", "No data"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MainWindow", "No data to display"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))

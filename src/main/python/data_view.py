@@ -36,8 +36,8 @@ class TableModel(QtCore.QAbstractTableModel):
                 return "%.2f" % value
 
             if isinstance(value, str):
-                # Render strings with quotes
-                return '"%s"' % value
+                # Render strings just as-is
+                return value
 
             # Default (anything not captured above: e.g. int)
             return str(value)
@@ -131,11 +131,17 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
     def __init__(self, main_window, table_name: str, *args, **kwargs):
         super(DataViewForm, self).__init__(*args, **kwargs)
         self.setupUi(self)
-        self.graph_widget = pg.PlotWidget(axisItems={"bottom": pg.DateAxisItem()})
-        self.graph_widget.showGrid(x=True, y=True)
+
         self.plot_series = []
 
-        self.splitter.addWidget(self.graph_widget)
+        tables_without_plots = ["LogMessages"]
+        if not table_name in tables_without_plots:
+            self.graph_widget = pg.PlotWidget(axisItems={"bottom": pg.DateAxisItem()})
+            self.graph_widget.showGrid(x=True, y=True)
+            self.splitter.addWidget(self.graph_widget)
+            self.splitter.setSizes([1, 1])
+        else:
+            self.graph_widget = None
 
         self.main_window = main_window
         self.table_name = table_name
@@ -257,16 +263,17 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
 
         # TODO: link to plot data, or somehow avoid copying the entire
         # x/y series each time
-
-        if self.selected_column is not None and self.selected_column != 0:
-            # find DetectorName column
-            yname, y = self.model.get_plot_data(column_idx=self.selected_column)
-            xname, x = self.model.get_plot_data(column_idx=0)
-            detector_name = self.model.get_detector_name_data()
-            x = [itm.timestamp() for itm in x]
-            self.step_plot(x, y, legend_data=detector_name, title=yname)
+        if self.graph_widget is not None:
+            if self.selected_column is not None and self.selected_column != 0:
+                # find DetectorName column
+                yname, y = self.model.get_plot_data(column_idx=self.selected_column)
+                xname, x = self.model.get_plot_data(column_idx=0)
+                detector_name = self.model.get_detector_name_data()
+                x = [itm.timestamp() for itm in x]
+                self.step_plot(x, y, legend_data=detector_name, title=yname)
 
         self.last_redraw_time = time.time()
+
 
 #    def __del__(self):
 #        """ Handy for ensuring the widget is really getting deleted"""
