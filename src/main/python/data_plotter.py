@@ -37,6 +37,7 @@ def groupby_series(x, y, legend_data):
 
 class DataPlotter(object):
     def __init__(self, win: pg.GraphicsLayoutWidget, data: typing.List):
+        self._linewidth = 2
         self.setup(win, data)
 
     def setup(self, win, data):
@@ -77,9 +78,11 @@ class DataPlotter(object):
                 Nplts=N,
             )
 
-    def get_color(self, idx):
+    def get_pen(self, idx):
         N = len(self._colormap)
-        return self._colormap[idx % N]
+        pen = pg.mkPen(self._colormap[idx % N])
+        pen.setWidth(self._linewidth)
+        return pen
 
     def plot(self, win, data, xvar, yvar, huevar, idx, Nplts):
         po = {}
@@ -107,7 +110,7 @@ class DataPlotter(object):
             self._plot_objects["legend"] = legend
 
         for series_idx, (x, y, label) in enumerate(groupby_series(x, y, legend_data)):
-            s = p.plot(x, y, pen=self.get_color(series_idx), name=label)
+            s = p.plot(x, y, pen=self.get_pen(series_idx), name=label)
             po["series"][series_idx] = s
 
         self._plot_objects[idx] = po
@@ -115,6 +118,8 @@ class DataPlotter(object):
     def update(self, data):
         datac = data_to_columns(data)
         for idx, po in self._plot_objects.items():
+            if idx == "legend":
+                continue
             x = po["xvar"]
             y = po["yvar"]
             hue = po["huevar"]

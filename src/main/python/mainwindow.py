@@ -13,12 +13,12 @@ from typing import Dict, List, Union
 import numpy as np
 import pyqtgraph as pg
 import sip
-from ansto_radon_monitor.configuration import (Configuration,
-                                               config_from_yamlfile)
+from ansto_radon_monitor.configuration import Configuration, config_from_yamlfile
 from ansto_radon_monitor.main import setup_logging
 from ansto_radon_monitor.main_controller import MainController, initialize
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
+
 # from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtCore import QSettings, Qt, QTimer
 
@@ -114,6 +114,20 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.qsettings = QSettings("au.gov.ansto", appctxt.app.applicationName())
         _logger.debug(f"QSettings initialised at {self.qsettings.fileName()}")
 
+        self.setupUi(self)
+        # plot default settings
+        pg.setConfigOption("antialias", True)
+
+        # dark/light mode handling
+        app = QtWidgets.QApplication.instance()
+        self._default_app_style = app.style().objectName()
+        self._default_palette = app.palette()
+
+        ## QSettings value might be True, False or None
+        self._use_dark_theme = (self.qsettings.value("use_dark_theme") == 'true')
+        self.set_dark_theme(self._use_dark_theme)
+        self.actionDarkMode.setChecked(self._use_dark_theme)
+
         self.instrument_controller = None
         self.config: Configuration = None
         self.configured_tables: List[str] = []
@@ -128,7 +142,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Load the UI Page
         # uic.loadUi(appctxt.get_resource("main_window.ui"), baseinstance=self)
 
-        self.setupUi(self)
         self.setup_statusbar()
 
         logTextBox = self.logArea
@@ -193,6 +206,23 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         sb.addWidget(lab2)
         self.statusbarlabel_left = lab2
 
+    def set_dark_theme(self, dark_theme_on):
+        app = QtWidgets.QApplication.instance()
+        self.qsettings.setValue("use_dark_theme", dark_theme_on)
+        if dark_theme_on:
+            app.setPalette(dark_palette())
+            pg.setConfigOption("background", (42,42,42))
+            pg.setConfigOption("foreground", "w")
+            # also, works best in 'fusion' style
+            app.setStyle("Fusion")
+        else:
+            pg.setConfigOption("background", "w")
+            pg.setConfigOption("foreground", "k")
+            #app.setStyle(self._default_app_style)
+            app.setStyle("Native")
+            app.setPalette(self._default_palette)
+
+
     def set_status(self, message, happy=None):
         if happy is None:
             icon = ""
@@ -213,6 +243,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionQuit.triggered.connect(self.close)
         self.actionShow_Data.triggered.connect(self.show_data)
         self.actionViewCalibration.triggered.connect(self.view_calibration_dialog)
+        self.actionDarkMode.triggered.connect(self.set_dark_theme)
         self.actionViewSystemInformation.triggered.connect(
             self.view_system_information_dialog
         )
@@ -415,3 +446,44 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             else:
                 # TODO: this method might not exist!
                 self.actionLoad_Configuration.emit()
+
+
+def dark_palette():
+    """A dark color palette
+    
+    From https://github.com/Jorgen-VikingGod/Qt-Frameless-Window-DarkStyle/blob/master/DarkStyle.cpp
+    
+
+    Use like this:
+    app = QtWidgets.QApplication.instance()
+    app.setPalette(dark_palette())
+    # also, works best in 'fusion' style
+    app.setStyle("Fusion")
+    """
+    from PyQt5.QtGui import QPalette, QColor
+    from PyQt5.QtCore import Qt
+
+    darkPalette = QPalette()
+    darkPalette.setColor(QPalette.Window, QColor(53, 53, 53))
+    darkPalette.setColor(QPalette.WindowText, Qt.white)
+    darkPalette.setColor(QPalette.Disabled, QPalette.WindowText, QColor(127, 127, 127))
+    darkPalette.setColor(QPalette.Base, QColor(42, 42, 42))
+    darkPalette.setColor(QPalette.AlternateBase, QColor(66, 66, 66))
+    darkPalette.setColor(QPalette.ToolTipBase, Qt.white)
+    darkPalette.setColor(QPalette.ToolTipText, Qt.white)
+    darkPalette.setColor(QPalette.Text, Qt.white)
+    darkPalette.setColor(QPalette.Disabled, QPalette.Text, QColor(127, 127, 127))
+    darkPalette.setColor(QPalette.Dark, QColor(35, 35, 35))
+    darkPalette.setColor(QPalette.Shadow, QColor(20, 20, 20))
+    darkPalette.setColor(QPalette.Button, QColor(53, 53, 53))
+    darkPalette.setColor(QPalette.ButtonText, Qt.white)
+    darkPalette.setColor(QPalette.Disabled, QPalette.ButtonText, QColor(127, 127, 127))
+    darkPalette.setColor(QPalette.BrightText, Qt.red)
+    darkPalette.setColor(QPalette.Link, QColor(42, 130, 218))
+    darkPalette.setColor(QPalette.Highlight, QColor(42, 130, 218))
+    darkPalette.setColor(QPalette.Disabled, QPalette.Highlight, QColor(80, 80, 80))
+    darkPalette.setColor(QPalette.HighlightedText, Qt.white)
+    darkPalette.setColor(
+        QPalette.Disabled, QPalette.HighlightedText, QColor(127, 127, 127)
+    )
+    return darkPalette

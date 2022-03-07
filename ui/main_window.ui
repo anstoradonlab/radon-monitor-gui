@@ -147,6 +147,8 @@ p, li { white-space: pre-wrap; }
     </property>
     <addaction name="actionViewCalibration"/>
     <addaction name="actionViewSystemInformation"/>
+    <addaction name="separator"/>
+    <addaction name="actionDarkMode"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -175,6 +177,14 @@ p, li { white-space: pre-wrap; }
   <action name="actionViewSystemInformation">
    <property name="text">
     <string>System Information</string>
+   </property>
+  </action>
+  <action name="actionDarkMode">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Dark Mode</string>
    </property>
   </action>
  </widget>

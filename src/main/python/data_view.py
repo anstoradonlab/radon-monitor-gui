@@ -215,9 +215,15 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
         self.graph_widget.setTitle(title)
 
     def step_plot(self, x, y, legend_data=None, title=None):
+        smooth_these = ["LLD", "ULD"]
+        do_smoothing = title in smooth_these
         if self.legend is not None:
             self.graph_widget.removeItem(self.legend)
-        self.legend = self.graph_widget.addLegend(frame=False, rowCount=1, colCount=2)
+        if do_smoothing:
+            rc = 2
+        else:
+            rc = 1
+        self.legend = self.graph_widget.addLegend(frame=False, rowCount=rc, colCount=2)
 
         for itm in self.plot_series:
             self.graph_widget.removeItem(itm)
@@ -236,8 +242,41 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
             except ValueError:
                 data_is_not_numeric = True
                 break
-            p = self.graph_widget.plot(xplt, yplt, name=label, pen=self.get_color(idx))
+            color = self.get_color(idx)
+            if do_smoothing:
+                # darken the color
+                color = color[0] // 2, color[1] // 2, color[2] // 2
+            pen = pg.mkPen(color)
+            p = self.graph_widget.plot(xplt, yplt, name=label, pen=pen)
             self.plot_series.append(p)
+        
+        if do_smoothing:
+            # loop again, so that smooth lines are plotted on top
+            # of the earlier series
+            for idx, (x, y, label) in enumerate(self.groupby_series(x, y, legend_data)):
+                # also add smoothed value for some inputs
+                dx = np.r_[np.diff(x), np.median(np.diff(x))]
+                xplt = np.empty(len(x) * 2)
+                xplt[::2] = x
+                xplt[1::2] = x + dx
+                # 30 minutes smoothing
+                # WARNING - MAGIC NUMBERS (assumes 10-sec)
+                # sampling interval, TODO: fix
+                conv = np.ones(6 * 30 + 1)
+                conv /= conv.sum()
+                y_s = np.convolve(y, conv, mode="same")
+                y_s[: 3 * 30] = np.NaN
+                y_s[-3 * 30 :] = np.NaN
+                yplt = np.empty(len(y) * 2)
+                yplt[::2] = y_s
+                yplt[1::2] = y_s
+                pen = pg.mkPen(self.get_color(idx))
+                pen.setWidth(3)
+                p = self.graph_widget.plot(
+                    xplt, yplt, name=label + " smoothed", pen=pen
+                )
+                self.plot_series.append(p)
+
         self.graph_widget.setTitle(title)
 
     def update_displays(self):

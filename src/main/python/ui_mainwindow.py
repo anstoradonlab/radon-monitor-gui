@@ -97,12 +97,17 @@ class Ui_MainWindow(object):
         self.actionViewCalibration.setObjectName("actionViewCalibration")
         self.actionViewSystemInformation = QtWidgets.QAction(MainWindow)
         self.actionViewSystemInformation.setObjectName("actionViewSystemInformation")
+        self.actionDarkMode = QtWidgets.QAction(MainWindow)
+        self.actionDarkMode.setCheckable(True)
+        self.actionDarkMode.setObjectName("actionDarkMode")
         self.menuFile.addAction(self.actionLoad_Configuration)
         self.menuFile.addAction(self.actionShow_Data)
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.actionQuit)
         self.menuView.addAction(self.actionViewCalibration)
         self.menuView.addAction(self.actionViewSystemInformation)
+        self.menuView.addSeparator()
+        self.menuView.addAction(self.actionDarkMode)
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuView.menuAction())
 
@@ -127,4 +132,5 @@ class Ui_MainWindow(object):
         self.actionShow_Data.setText(_translate("MainWindow", "Show Data"))
         self.actionViewCalibration.setText(_translate("MainWindow", "Calibration"))
         self.actionViewSystemInformation.setText(_translate("MainWindow", "System Information"))
+        self.actionDarkMode.setText(_translate("MainWindow", "Dark Mode"))
 
