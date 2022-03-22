@@ -215,15 +215,15 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
         self.graph_widget.setTitle(title)
 
     def step_plot(self, x, y, legend_data=None, title=None):
-        smooth_these = ["LLD", "ULD"]
+        smooth_these = ["LLD", "ULD", "ExFlow"]
         do_smoothing = title in smooth_these
         if self.legend is not None:
             self.graph_widget.removeItem(self.legend)
-        if do_smoothing:
-            rc = 2
-        else:
-            rc = 1
-        self.legend = self.graph_widget.addLegend(frame=False, rowCount=rc, colCount=2)
+        # if do_smoothing:
+        #    rc = 2
+        # else:
+        #    rc = 1
+        self.legend = self.graph_widget.addLegend(frame=False, colCount=1)
 
         for itm in self.plot_series:
             self.graph_widget.removeItem(itm)
@@ -249,7 +249,7 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
             pen = pg.mkPen(color)
             p = self.graph_widget.plot(xplt, yplt, name=label, pen=pen)
             self.plot_series.append(p)
-        
+
         if do_smoothing:
             # loop again, so that smooth lines are plotted on top
             # of the earlier series

@@ -13,18 +13,19 @@ from typing import Dict, List, Union
 import numpy as np
 import pyqtgraph as pg
 import sip
-from ansto_radon_monitor.configuration import Configuration, config_from_yamlfile
+from ansto_radon_monitor.configuration import (Configuration,
+                                               config_from_yamlfile)
 from ansto_radon_monitor.main import setup_logging
 from ansto_radon_monitor.main_controller import MainController, initialize
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
-
 # from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtCore import QSettings, Qt, QTimer
 
 from c_and_b import CAndBForm
 from data_plotter import DataPlotter
 from data_view import DataViewForm
+from sensitivity_sweep import SensitivitySweepForm
 from system_information import SystemInformationForm
 from ui_mainwindow import Ui_MainWindow
 
@@ -103,6 +104,11 @@ class WindowsInhibitor:
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
+
+    # a signal which gets emitted when new data arrives
+    # arguments are table_name, data
+    data_update = QtCore.pyqtSignal(str, object)
+
     def __init__(self, appctxt: ApplicationContext, *args, **kwargs):
         # fbs application context
         self.appctxt = appctxt
@@ -124,7 +130,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._default_palette = app.palette()
 
         ## QSettings value might be True, False or None
-        self._use_dark_theme = (self.qsettings.value("use_dark_theme") == 'true')
+        self._use_dark_theme = self.qsettings.value("use_dark_theme") == "true"
         self.set_dark_theme(self._use_dark_theme)
         self.actionDarkMode.setChecked(self._use_dark_theme)
 
@@ -175,6 +181,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.cal_dialog = None
         self.sysinfo_dialog = None
+        self.sensitivity_sweep_dialog = None
 
         geom = self.qsettings.value("geometry")
         winstate = self.qsettings.value("windowState")
@@ -211,17 +218,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.qsettings.setValue("use_dark_theme", dark_theme_on)
         if dark_theme_on:
             app.setPalette(dark_palette())
-            pg.setConfigOption("background", (42,42,42))
+            pg.setConfigOption("background", (42, 42, 42))
             pg.setConfigOption("foreground", "w")
             # also, works best in 'fusion' style
             app.setStyle("Fusion")
         else:
             pg.setConfigOption("background", "w")
             pg.setConfigOption("foreground", "k")
-            #app.setStyle(self._default_app_style)
+            # app.setStyle(self._default_app_style)
             app.setStyle("Native")
             app.setPalette(self._default_palette)
-
 
     def set_status(self, message, happy=None):
         if happy is None:
@@ -246,6 +252,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionDarkMode.triggered.connect(self.set_dark_theme)
         self.actionViewSystemInformation.triggered.connect(
             self.view_system_information_dialog
+        )
+        self.actionViewSensitivitySweep.triggered.connect(
+            self.view_sensitivity_sweep_dialog
         )
 
     def onLoadConfiguration(self, s):
@@ -287,6 +296,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             sysinfo_dialog.show()
             self.sysinfo_dialog = sysinfo_dialog
 
+    def view_sensitivity_sweep_dialog(self):
+        if self.sensitivity_sweep_dialog is not None:
+            self.sensitivity_sweep_dialog.show()
+        else:
+            w = SensitivitySweepForm(mainwindow=self)
+            sensitivity_sweep_dialog = QtWidgets.QDialog(parent=self)
+            sensitivity_sweep_dialog.setWindowTitle("Sensitivity Sweep")
+            layout = QtWidgets.QVBoxLayout(sensitivity_sweep_dialog)
+            layout.addWidget(w)
+            sensitivity_sweep_dialog.show()
+            self.sensitivity_sweep_dialog = sensitivity_sweep_dialog
+
     def update_plot_data(self, table_name):
         """Update the local cache of plot data
 
@@ -298,17 +319,25 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         default_npoints = {"RTV": 600 * 24, "Results": 24 * 2 * 10}
         npoints = default_npoints.get(k, 1000)
         if self.plot_data is None:
-            self.plot_data = {"buffer": {}, "t": None}
+            self.plot_data = {"buffer": {}, "t": {}}
 
         buffer = self.plot_data["buffer"].get(k, collections.deque(maxlen=npoints))
-        told = self.plot_data["t"]
+        told = self.plot_data["t"].get(k, None)
         tnew, newdata = self.instrument_controller.get_rows(table_name, told)
         data_has_changed = False
         if not tnew == told:
-            self.plot_data["t"] = tnew
+            self.plot_data["t"][k] = tnew
             for row in newdata:
                 buffer.append(row)
                 data_has_changed = True
+                # emit data as a qtSignal
+                # self.data_update.emit(table_name, row)
+            # emit the most recent data from each detector
+            most_recent = {}
+            for row in newdata:
+                most_recent[row["DetectorName"]] = row
+            for row in most_recent.values():
+                self.data_update.emit(table_name, row)
 
         self.plot_data["buffer"][k] = buffer
         return data_has_changed, buffer
@@ -384,6 +413,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.close_plots()
             return
         self.update_plots("Results")
+        self.update_plot_data("RTV")
         self.set_status(ic.get_status()["summary"], None)
         tables = ic.list_data_tables()
         html = ic.html_current_measurement()
@@ -450,9 +480,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 def dark_palette():
     """A dark color palette
-    
+
     From https://github.com/Jorgen-VikingGod/Qt-Frameless-Window-DarkStyle/blob/master/DarkStyle.cpp
-    
+
 
     Use like this:
     app = QtWidgets.QApplication.instance()
@@ -460,8 +490,8 @@ def dark_palette():
     # also, works best in 'fusion' style
     app.setStyle("Fusion")
     """
-    from PyQt5.QtGui import QPalette, QColor
     from PyQt5.QtCore import Qt
+    from PyQt5.QtGui import QColor, QPalette
 
     darkPalette = QPalette()
     darkPalette.setColor(QPalette.Window, QColor(53, 53, 53))

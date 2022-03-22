@@ -7,6 +7,8 @@ import numpy as np
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtWidgets
 
+from plotutils import data_to_columns, get_pen, groupby_series
+
 _logger = logging.getLogger(__name__)
 
 
@@ -14,30 +16,8 @@ _logger = logging.getLogger(__name__)
 # python ...\env\lib\site-packages\pyqtgraph\examples\ExampleApp.py
 
 
-def data_to_columns(data):
-    """convert data (list of dicts) into dict of arrays"""
-    data_arrays = {}
-    for k in data[0]:
-        data_arrays[k] = np.array([itm[k] for itm in data])
-    return data_arrays
-
-
-def groupby_series(x, y, legend_data):
-    if legend_data is None:
-        ret = [(x, y, None)]
-    else:
-        ret = []
-        for label in sorted(set(legend_data)):
-            mask = legend_data == label
-            xii = x[mask]
-            yii = y[mask]
-            ret.append((xii, yii, str(label)))
-    return ret
-
-
 class DataPlotter(object):
     def __init__(self, win: pg.GraphicsLayoutWidget, data: typing.List):
-        self._linewidth = 2
         self.setup(win, data)
 
     def setup(self, win, data):
@@ -56,13 +36,6 @@ class DataPlotter(object):
 
         N = len(plot_yvars)
         win.resize(400, 100 * N)
-        self._colormap = (
-            (158, 202, 225),
-            (253, 174, 107),
-            (161, 217, 155),
-            (188, 189, 220),
-            (189, 189, 189),
-        )
 
         datac = data_to_columns(data)
         datac["Datetime"] = np.array([itm.timestamp() for itm in datac["Datetime"]])
@@ -77,12 +50,6 @@ class DataPlotter(object):
                 idx=idx,
                 Nplts=N,
             )
-
-    def get_pen(self, idx):
-        N = len(self._colormap)
-        pen = pg.mkPen(self._colormap[idx % N])
-        pen.setWidth(self._linewidth)
-        return pen
 
     def plot(self, win, data, xvar, yvar, huevar, idx, Nplts):
         po = {}
@@ -110,7 +77,7 @@ class DataPlotter(object):
             self._plot_objects["legend"] = legend
 
         for series_idx, (x, y, label) in enumerate(groupby_series(x, y, legend_data)):
-            s = p.plot(x, y, pen=self.get_pen(series_idx), name=label)
+            s = p.plot(x, y, pen=get_pen(series_idx), name=label)
             po["series"][series_idx] = s
 
         self._plot_objects[idx] = po

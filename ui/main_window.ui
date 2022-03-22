@@ -147,6 +147,7 @@ p, li { white-space: pre-wrap; }
     </property>
     <addaction name="actionViewCalibration"/>
     <addaction name="actionViewSystemInformation"/>
+    <addaction name="actionViewSensitivitySweep"/>
     <addaction name="separator"/>
     <addaction name="actionDarkMode"/>
    </widget>
@@ -185,6 +186,11 @@ p, li { white-space: pre-wrap; }
    </property>
    <property name="text">
     <string>Dark Mode</string>
+   </property>
+  </action>
+  <action name="actionViewSensitivitySweep">
+   <property name="text">
+    <string>Sensitivity Sweep</string>
    </property>
   </action>
  </widget>

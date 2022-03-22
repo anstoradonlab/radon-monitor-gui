@@ -1,10 +1,10 @@
+print("started in main.py")
 import logging
 import sys
 
 import pyqtgraph
 from ansto_radon_monitor.main import setup_logging
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
-
 # from PyQt5.QtWidgets import QMainWindow
 from PyQt5 import QtCore, QtWidgets, uic
 
