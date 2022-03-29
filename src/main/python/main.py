@@ -16,9 +16,8 @@ setup_logging(loglevel=logging.INFO)
 if __name__ == "__main__":
 
     # Ref for this idea: https://stackoverflow.com/questions/8786136/pyqt-how-to-detect-and-close-ui-if-its-already-running
-    lockfile = QtCore.QLockFile(
-        QtCore.QDir.tempPath() + "/ansto_radon_monitor_gui.lock"
-    )
+    lockfile_path = QtCore.QDir.tempPath() + "/ansto_radon_monitor_gui.lock"
+    lockfile = QtCore.QLockFile(lockfile_path)
 
     if lockfile.tryLock(100):
         appctxt = ApplicationContext()  # 1. Instantiate ApplicationContext
@@ -28,4 +27,5 @@ if __name__ == "__main__":
         exit_code = appctxt.app.exec_()  # 2. Invoke appctxt.app.exec_()
         sys.exit(exit_code)
     else:
+        print(f"lockfile unavailable: {lockfile_path}")
         sys.exit("app is already running")

@@ -1,6 +1,7 @@
 import datetime
 import logging
 import sys
+import time
 import typing
 
 import numpy as np
@@ -38,7 +39,9 @@ class DataPlotter(object):
         win.resize(400, 100 * N)
 
         datac = data_to_columns(data)
-        datac["Datetime"] = np.array([itm.timestamp() for itm in datac["Datetime"]])
+        datac["Datetime"] = np.array(
+            [itm.timestamp() + time.timezone for itm in datac["Datetime"]]
+        )
 
         for idx, k in enumerate(plot_yvars):
             self.plot(
@@ -99,5 +102,6 @@ class DataPlotter(object):
                 groupby_series(x, y, legend_data)
             ):
                 s = po["series"][series_idx]
-                xfloat = [itm.timestamp() for itm in x]
+                # subtract time.timezone to get display in UTC
+                xfloat = [itm.timestamp() + time.timezone for itm in x]
                 s.setData(x=xfloat, y=y)

@@ -9,6 +9,7 @@ from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import QSettings, Qt, QTimer
 from pyqtgraph import PlotWidget
 
+from plotutils import groupby_series
 from ui_data_view import Ui_DataViewForm
 
 
@@ -187,21 +188,6 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
         # print(f'{c0,r0}')
         self.selected_column = idx.column()
 
-    def groupby_series(self, x, y, legend_data):
-        if legend_data is None:
-            ret = [(x, y, None)]
-        else:
-            ret = []
-            for label in sorted(list(set(legend_data))):
-                xy = [
-                    (xii, yii)
-                    for xii, yii, lab in zip(x, y, legend_data)
-                    if lab == label
-                ]
-                xii, yii = zip(*xy)
-                ret.append((xii, yii, str(label)))
-        return ret
-
     def plot(self, x, y, legend_data=None, title=None):
         if self.legend is not None:
             self.graph_widget.removeItem(self.legend)
@@ -209,12 +195,14 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
         for itm in self.plot_series:
             self.graph_widget.removeItem(itm)
             self.plot_series = []
-        for idx, (x, y, label) in enumerate(self.groupby_series(x, y, legend_data)):
+        for idx, (x, y, label) in enumerate(groupby_series(x, y, legend_data)):
             p = self.graph_widget.plot(x, y, pen=self.get_color(idx))
             self.plot_series.append(p)
         self.graph_widget.setTitle(title)
 
     def step_plot(self, x, y, legend_data=None, title=None):
+        x_all = x
+        y_all = y
         smooth_these = ["LLD", "ULD", "ExFlow"]
         do_smoothing = title in smooth_these
         if self.legend is not None:
@@ -230,11 +218,12 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
             self.plot_series = []
 
         data_is_not_numeric = True
-        for idx, (x, y, label) in enumerate(self.groupby_series(x, y, legend_data)):
-            dx = np.r_[np.diff(x), np.median(np.diff(x))]
+        for idx, (x, y, label) in enumerate(groupby_series(x_all, y_all, legend_data)):
+            dx = np.median(np.diff(x))
             xplt = np.empty(len(x) * 2)
-            xplt[::2] = x
-            xplt[1::2] = x + dx
+            # end each bar at 'x', start at 'x-dx'
+            xplt[::2] = x - dx
+            xplt[1::2] = x
             yplt = np.empty(len(y) * 2)
             try:
                 yplt[::2] = y
@@ -253,29 +242,34 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
         if do_smoothing:
             # loop again, so that smooth lines are plotted on top
             # of the earlier series
-            for idx, (x, y, label) in enumerate(self.groupby_series(x, y, legend_data)):
+            for idx, (x, y, label) in enumerate(
+                groupby_series(x_all, y_all, legend_data)
+            ):
                 # also add smoothed value for some inputs
-                dx = np.r_[np.diff(x), np.median(np.diff(x))]
+                dx = np.r_[np.median(np.diff(x)), np.diff(x)]
                 xplt = np.empty(len(x) * 2)
-                xplt[::2] = x
-                xplt[1::2] = x + dx
+                xplt[::2] = x - dx
+                xplt[1::2] = x
                 # 30 minutes smoothing
                 # WARNING - MAGIC NUMBERS (assumes 10-sec)
                 # sampling interval, TODO: fix
-                conv = np.ones(6 * 30 + 1)
-                conv /= conv.sum()
-                y_s = np.convolve(y, conv, mode="same")
-                y_s[: 3 * 30] = np.NaN
-                y_s[-3 * 30 :] = np.NaN
-                yplt = np.empty(len(y) * 2)
-                yplt[::2] = y_s
-                yplt[1::2] = y_s
-                pen = pg.mkPen(self.get_color(idx))
-                pen.setWidth(3)
-                p = self.graph_widget.plot(
-                    xplt, yplt, name=label + " smoothed", pen=pen
-                )
-                self.plot_series.append(p)
+                conv_width = 6 * 30 // 2
+                # only plot the smoothed version if there is enough data
+                if len(y) < conv_width * 3:
+                    conv = np.ones(conv_width + 1, dtype=float)
+                    conv /= conv.sum()
+                    y_s = np.convolve(conv, np.array(y).astype(float), mode="same")
+                    y_s[: conv_width // 2] = np.NaN
+                    y_s[-conv_width // 2 :] = np.NaN
+                    yplt = np.empty(len(y) * 2)
+                    yplt[::2] = y_s
+                    yplt[1::2] = y_s
+                    pen = pg.mkPen(self.get_color(idx))
+                    pen.setWidth(3)
+                    p = self.graph_widget.plot(
+                        xplt, yplt, name=label + " smoothed", pen=pen
+                    )
+                    self.plot_series.append(p)
 
         self.graph_widget.setTitle(title)
 
@@ -290,9 +284,13 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
         if self.last_update_time is None:
             if self.table_name == "Results":
                 # only retrieve data from the last week
-                start_time = datetime.datetime.utcnow() - datetime.timedelta(days=7)
+                start_time = datetime.datetime.now(
+                    datetime.timezone.utc
+                ) - datetime.timedelta(days=7)
             else:
-                start_time = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+                start_time = datetime.datetime.now(
+                    datetime.timezone.utc
+                ) - datetime.timedelta(days=1)
         else:
             start_time = self.last_update_time
         t, newdata = ic.get_rows(self.table_name, start_time=start_time)
@@ -308,7 +306,10 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
                 yname, y = self.model.get_plot_data(column_idx=self.selected_column)
                 xname, x = self.model.get_plot_data(column_idx=0)
                 detector_name = self.model.get_detector_name_data()
-                x = [itm.timestamp() for itm in x]
+                # pyqtgraph timestamps are assumed to be in non-daylight saving time
+                # Here, I'm subtracting the timezone offset (in seconds) so that
+                # the plotted value is in UTC
+                x = [itm.timestamp() + time.timezone for itm in x]
                 self.step_plot(x, y, legend_data=detector_name, title=yname)
 
         self.last_redraw_time = time.time()

@@ -139,7 +139,7 @@ class SensitivitySweepForm(QtWidgets.QWidget, Ui_SensitivitySweepForm):
             s = self._s1.pop()
             self._p1.removeItem(s)
         datac = data_to_columns(self.timeseries_data)
-        x = np.array([itm.timestamp() for itm in datac["Datetime"]])
+        x = np.array([itm.timestamp() + time.timezone for itm in datac["Datetime"]])
         idx = 0
         for k in datac.keys():
             if k.startswith("HV") and not k.endswith("nominal"):
