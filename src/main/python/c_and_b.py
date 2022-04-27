@@ -237,7 +237,7 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
         ):
             v = qs.value(k)
             if v is not None:
-                w.setValue(v)
+                w.setValue(int(v))
         background_interval = qs.value("background_interval")
         if background_interval is not None:
             days = int(background_interval.total_seconds() / 3600.0 / 24.0)
