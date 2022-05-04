@@ -159,10 +159,16 @@ class SystemInformationForm(QtWidgets.QWidget, Ui_SystemInformationForm):
         try:
             # attempt to connect to a Data Logger
             # -- TODO: run this in a thread because it can take ages
-            serial_port_url = f"serial:/{info.device}:115200"
-            s += f"Attempting to connect using {serial_port_url}...\n"
+            s += f"Attempting to connect using {info.device}...\n"
             self.dataLoggerTextBrowser.setPlainText(s)
-            cr1000 = CR1000.from_url(serial_port_url, timeout=2)
+            ser = serial.Serial(port=None, 
+                    baudrate=115200,
+                    timeout=2,
+                    bytesize=serial.EIGHTBITS,
+                    parity=serial.PARITY_NONE,
+                    stopbits=1)
+            ser.port = info.device
+            cr1000 = CR1000(ser)
             logger_info = cr1000.getprogstat()
             s += f"{logger_info}"
             self.cr1000 = cr1000
