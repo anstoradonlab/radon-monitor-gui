@@ -34,6 +34,22 @@ class DataPlotter(object):
             "HV_Avg",
             "AirT_Avg",
         ]
+        self._units_dict = {
+            "LLD_Tot": "/30-min",
+            "ULD_Tot": "/30-min",
+            "ExFlow_Tot": "l/min",
+            "InFlow_Avg": "m/s",
+            "HV_Avg": "V",
+            "AirT_Avg": "degC",
+        }
+        self._name_dict = {
+            "LLD_Tot": "Total counts",
+            "ULD_Tot": "Noise counts",
+            "ExFlow_Tot": "Ext. flow",
+            "InFlow_Avg": "Int. flow",
+            "HV_Avg": "PMT power",
+            "AirT_Avg": "Air temp.",
+        }
 
         N = len(plot_yvars)
         win.resize(400, 100 * N)
@@ -68,9 +84,20 @@ class DataPlotter(object):
             _logger.error(f"Encounted error while generating plot: {e}")
             print(str(data.keys()))
             return
-        # TODO: look up units/nicer variable name
-        p = win.addPlot(row=idx, col=0, axisItems={"bottom": pg.DateAxisItem()})
-        p.setLabel("left", yvar, units="TODO")
+        p = win.addPlot(
+            row=idx,
+            col=0,
+            axisItems={
+                "bottom": pg.DateAxisItem(),
+            },
+        )
+        p.setLabel(
+            "left",
+            self._name_dict.get(yvar, yvar),
+            units=self._units_dict.get(yvar, "Unknown units"),
+        )
+        # do not convert units from e.g. V to kV
+        p.getAxis("left").enableAutoSIPrefix(False)
         po["plot"] = p
         po["series"] = {}
         if idx == Nplts - 1 and len(set(legend_data)) > 1:
