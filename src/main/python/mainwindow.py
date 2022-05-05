@@ -17,14 +17,13 @@ from ansto_radon_monitor.configuration import (Configuration,
                                                config_from_yamlfile)
 from ansto_radon_monitor.main import setup_logging
 from ansto_radon_monitor.main_controller import MainController, initialize
+from c_and_b import CAndBForm
+from data_plotter import DataPlotter
+from data_view import DataViewForm
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 # from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtCore import QSettings, Qt, QTimer
-
-from c_and_b import CAndBForm
-from data_plotter import DataPlotter
-from data_view import DataViewForm
 from sensitivity_sweep import SensitivitySweepForm
 from system_information import SystemInformationForm
 from ui_mainwindow import Ui_MainWindow

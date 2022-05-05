@@ -5,9 +5,8 @@ import time
 
 import numpy as np
 import pyqtgraph as pg
-from PyQt5 import QtCore, QtWidgets
-
 from plotutils import data_to_columns, get_pen, groupby_series
+from PyQt5 import QtCore, QtWidgets
 from ui_sensitivity_sweep import Ui_SensitivitySweepForm
 
 

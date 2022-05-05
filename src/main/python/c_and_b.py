@@ -3,7 +3,6 @@ import math
 import time
 
 from PyQt5 import QtCore, QtWidgets
-
 from ui_c_and_b import Ui_CAndBForm
 
 

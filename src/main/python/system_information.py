@@ -6,7 +6,6 @@ import serial.tools.list_ports
 from ansto_radon_monitor.labjack_interface import list_all_u12
 from pycampbellcr1000 import CR1000
 from PyQt5 import QtCore, QtWidgets
-
 from ui_system_information import Ui_SystemInformationForm
 
 
@@ -34,29 +33,27 @@ def get_clock_offset(cr1000):
 
     return clock_offset, halfquery
 
-def synchronise_clock(
-        cr1000
-    ):
-        s = ""
-        """Attempt to synchronise the clock on the datalogger with computer."""
-        # NOTE: the api for adjusting the datalogger clock isn't accurate beyond 1 second
-        # TODO: maybe improve this situation
-        minimum_time_difference_seconds = 1
-        # TODO: check that the computer time is reliable, i.e. NTP sync
-        #
-        clock_offset, halfquery = get_clock_offset(cr1000)
-        s +=  f"Time difference (datalogger minus computer): {clock_offset}"
-        
-        
-        if abs(clock_offset) < minimum_time_difference_seconds:
-            s+=f"Datalogger and computer clocks are out of synchronisation by less than {minimum_time_difference_seconds} seconds, not adjusting time"
-            
-        else:
-            new_time = datetime.datetime.now(datetime.timezone.utc) + halfquery
-            cr1000.settime(new_time)
-            clock_offset, halfquery = self.get_clock_offset()
-            s+=f"Synchronised datalogger clock with computer clock, time difference (datalogger minus computer): {clock_offset}, detector: {self.detectorName}"
-        return s
+
+def synchronise_clock(cr1000):
+    s = ""
+    """Attempt to synchronise the clock on the datalogger with computer."""
+    # NOTE: the api for adjusting the datalogger clock isn't accurate beyond 1 second
+    # TODO: maybe improve this situation
+    minimum_time_difference_seconds = 1
+    # TODO: check that the computer time is reliable, i.e. NTP sync
+    #
+    clock_offset, halfquery = get_clock_offset(cr1000)
+    s += f"Time difference (datalogger minus computer): {clock_offset}"
+
+    if abs(clock_offset) < minimum_time_difference_seconds:
+        s += f"Datalogger and computer clocks are out of synchronisation by less than {minimum_time_difference_seconds} seconds, not adjusting time"
+
+    else:
+        new_time = datetime.datetime.now(datetime.timezone.utc) + halfquery
+        cr1000.settime(new_time)
+        clock_offset, halfquery = self.get_clock_offset()
+        s += f"Synchronised datalogger clock with computer clock, time difference (datalogger minus computer): {clock_offset}, detector: {self.detectorName}"
+    return s
 
 
 class SystemInformationForm(QtWidgets.QWidget, Ui_SystemInformationForm):
@@ -147,6 +144,7 @@ class SystemInformationForm(QtWidgets.QWidget, Ui_SystemInformationForm):
     def on_combobox_changed(self):
         self.dataLoggerTextBrowser.setPlainText("")
         if self.cr1000 is not None:
+            # TODO: 'close' doesn't really exist
             self.cr1000.close()
             self.cr1000 = None
 
@@ -161,12 +159,14 @@ class SystemInformationForm(QtWidgets.QWidget, Ui_SystemInformationForm):
             # -- TODO: run this in a thread because it can take ages
             s += f"Attempting to connect using {info.device}...\n"
             self.dataLoggerTextBrowser.setPlainText(s)
-            ser = serial.Serial(port=None, 
-                    baudrate=115200,
-                    timeout=2,
-                    bytesize=serial.EIGHTBITS,
-                    parity=serial.PARITY_NONE,
-                    stopbits=1)
+            ser = serial.Serial(
+                port=None,
+                baudrate=115200,
+                timeout=2,
+                bytesize=serial.EIGHTBITS,
+                parity=serial.PARITY_NONE,
+                stopbits=1,
+            )
             ser.port = info.device
             cr1000 = CR1000(ser)
             logger_info = cr1000.getprogstat()
@@ -175,7 +175,6 @@ class SystemInformationForm(QtWidgets.QWidget, Ui_SystemInformationForm):
         except Exception as e:
             s += f'Error occured: "{e}"'
         self.dataLoggerTextBrowser.setPlainText(s)
-
 
     def on_download(self):
         s = ""
@@ -186,14 +185,14 @@ class SystemInformationForm(QtWidgets.QWidget, Ui_SystemInformationForm):
                 return
             cr1000 = self.cr1000
             logger_info = cr1000.getprogstat()
-            currently_running_file = str(logger_info['ProgName'], 'utf-8')
+            currently_running_file = str(logger_info["ProgName"], "utf-8")
             s += f"{currently_running_file}\n\n"
-            file_contents = str(cr1000.getfile(currently_running_file), 'utf-8')
+            file_contents = str(cr1000.getfile(currently_running_file), "utf-8")
             s += f"{file_contents}"
         except Exception as e:
             s += f'Error occured: "{e}"'
         self.dataLoggerTextBrowser.setPlainText(s)
-        
+
     def on_time_sync(self):
         s = ""
         try:
@@ -206,7 +205,6 @@ class SystemInformationForm(QtWidgets.QWidget, Ui_SystemInformationForm):
         except Exception as e:
             s += f'Error occured: "{e}"'
         self.dataLoggerTextBrowser.setPlainText(s)
-   
 
     def on_query_labjack(self):
         # TODO: refactor this into the base library (to remove code duplication)
