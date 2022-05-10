@@ -19,10 +19,10 @@ def get_clock_offset(cr1000):
     # measure the length of time required to query the datalogger clock
     # -- first query it, in case of slow response due to power saving
     # -- mode or some such
-    t_datalogger = cr1000.gettime().replace(tzinfo=datetime.timezone.utc)
+    t_datalogger = cr1000.gettime()
     tick = time.time()
-    t_datalogger = cr1000.gettime().replace(tzinfo=datetime.timezone.utc)
-    t_computer = datetime.datetime.now(datetime.timezone.utc)
+    t_datalogger = cr1000.gettime()
+    t_computer = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
     tock = time.time()
     time_required_for_query = tock - tick
     halfquery = datetime.timedelta(seconds=time_required_for_query / 2.0)
@@ -33,8 +33,17 @@ def get_clock_offset(cr1000):
 
     return clock_offset, halfquery
 
+def increment_datalogger_clock(cr1000: CR1000, increment_dt: float):
+    """
+    Adjust time by adding "increment_dt" seconds
+    """
+    t = increment_dt
+    increment_seconds = int(t)
+    increment_nanoseconds = int((t-increment_seconds)*1e9)
+    cr1000.pakbus.get_clock_cmd((increment_seconds, increment_nanoseconds))
+    hdr, msg, sdt1 = cr1000.send_wait(cr1000.pakbus.get_clock_cmd((increment_seconds, increment_nanoseconds)))
 
-def synchronise_clock(cr1000):
+def synchronise_clock(cr1000, force_sync=False):
     s = ""
     """Attempt to synchronise the clock on the datalogger with computer."""
     # NOTE: the api for adjusting the datalogger clock isn't accurate beyond 1 second
@@ -43,16 +52,15 @@ def synchronise_clock(cr1000):
     # TODO: check that the computer time is reliable, i.e. NTP sync
     #
     clock_offset, halfquery = get_clock_offset(cr1000)
-    s += f"Time difference (datalogger minus computer): {clock_offset}"
+    s += f"Time difference (datalogger minus computer): {clock_offset} seconds\n"
 
-    if abs(clock_offset) < minimum_time_difference_seconds:
+    if not force_sync and abs(clock_offset) < minimum_time_difference_seconds:
         s += f"Datalogger and computer clocks are out of synchronisation by less than {minimum_time_difference_seconds} seconds, not adjusting time"
 
     else:
-        new_time = datetime.datetime.now(datetime.timezone.utc) + halfquery
-        cr1000.settime(new_time)
-        clock_offset, halfquery = self.get_clock_offset()
-        s += f"Synchronised datalogger clock with computer clock, time difference (datalogger minus computer): {clock_offset}, detector: {self.detectorName}"
+        increment_datalogger_clock(cr1000, - clock_offset)
+        clock_offset, halfquery = get_clock_offset(cr1000)
+        s += f"Synchronised datalogger clock with computer clock, time difference (datalogger minus computer): {clock_offset} seconds"
     return s
 
 
@@ -201,9 +209,11 @@ class SystemInformationForm(QtWidgets.QWidget, Ui_SystemInformationForm):
             if self.cr1000 is None:
                 return
             cr1000 = self.cr1000
-            s += synchronise_clock(cr1000)
+            s += synchronise_clock(cr1000, force_sync=True)
         except Exception as e:
             s += f'Error occured: "{e}"'
+            import traceback
+            s += traceback.format_exc()
         self.dataLoggerTextBrowser.setPlainText(s)
 
     def on_query_labjack(self):

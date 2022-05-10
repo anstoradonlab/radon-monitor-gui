@@ -9,7 +9,7 @@ from mainwindow import MainWindow
 # from PyQt5.QtWidgets import QMainWindow
 from PyQt5 import QtCore, QtWidgets, uic
 
-setup_logging(loglevel=logging.INFO)
+setup_logging(loglevel=logging.DEBUG)
 
 
 if __name__ == "__main__":

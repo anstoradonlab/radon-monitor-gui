@@ -165,8 +165,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         guilogger.addFilter(Blacklist())
 
         logging.getLogger().addHandler(guilogger)
-        # You can control the logging level (TODO: get from config file)
-        logging.getLogger().setLevel(logging.INFO)
+        # Get log level from config file
+        if self.config is not None:
+            loglevel = self.config.loglevel
+        else:
+            loglevel = logging.INFO
+        logging.getLogger().setLevel(loglevel)
 
         self.connect_signals()
 
@@ -385,6 +389,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.config = config
 
+        logging.getLogger().setLevel(config.loglevel)
+
+
         self.instrument_controller = initialize(config, mode="thread")
 
     def closeEvent(self, event):
@@ -418,7 +425,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         html = ic.html_current_measurement()
         self.hudTextBrowser.setHtml(html)
         num_detectors = len(self.config.detectors)
-        hud_height = num_detectors * 150
+        hud_height = num_detectors * 160
         self.hudTextBrowser.setMinimumHeight(hud_height)
 
         if not set(self.configured_tables) == set(tables):
