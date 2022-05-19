@@ -153,13 +153,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         guilogger = QTextEditLogger(logTextBox)
         logformat = "[%(levelname)1.1s %(asctime)s %(module)s:%(lineno)d %(threadName)s] %(message)s"
         guilogger.setFormatter(logging.Formatter(logformat))
-        logging.getLogger('root').addHandler(guilogger)
+        logging.getLogger().addHandler(guilogger)
         # Get log level from config file
         if self.config is not None:
             loglevel = self.config.loglevel
         else:
             loglevel = logging.INFO
-        logging.getLogger('root').setLevel(loglevel)
+        logging.getLogger().setLevel(loglevel)
 
         self.connect_signals()
 
