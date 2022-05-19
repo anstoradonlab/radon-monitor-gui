@@ -153,24 +153,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         guilogger = QTextEditLogger(logTextBox)
         logformat = "[%(levelname)1.1s %(asctime)s %(module)s:%(lineno)d %(threadName)s] %(message)s"
         guilogger.setFormatter(logging.Formatter(logformat))
-        # filter out low-level messages from serial port comms
-        class Blacklist(logging.Filter):
-            def __init__(self):
-                self.blacklist = ["pycampbellcr1000", "pylink"]
-
-            def filter(self, record):
-                """return True to keep message"""
-                return not record.name in self.blacklist
-
-        guilogger.addFilter(Blacklist())
-
-        logging.getLogger().addHandler(guilogger)
+        logging.getLogger('root').addHandler(guilogger)
         # Get log level from config file
         if self.config is not None:
             loglevel = self.config.loglevel
         else:
             loglevel = logging.INFO
-        logging.getLogger().setLevel(loglevel)
+        logging.getLogger('root').setLevel(loglevel)
 
         self.connect_signals()
 
@@ -389,8 +378,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.config = config
 
-        logging.getLogger().setLevel(config.loglevel)
-
+        setup_logging(config.loglevel, config.logfile)
 
         self.instrument_controller = initialize(config, mode="thread")
 

@@ -2,6 +2,8 @@
 # Basic config, one 1500 L detector
 
 data_dir: "./data"
+logfile: "./data/radon_monitor_messages.log"
+
 
 detectors:
   # detector_kind sets the type of radon detector.  Options are:
