@@ -168,7 +168,7 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
 
     def onCalibrate(self, s):
         if self.calDateTimeEdit.isEnabled():
-            start_time = self.calDateTimeEdit.dateTime().toUTC().toPyDateTime()
+            start_time = self.calDateTimeEdit.dateTime().toUTC().toPyDateTime().replace(tzinfo=datetime.timezone.utc)
         else:
             start_time = None
         flush_duration_sec = self.flushSpinBox.value() * 3600
