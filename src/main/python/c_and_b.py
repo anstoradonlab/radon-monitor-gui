@@ -4,7 +4,7 @@ import time
 
 from PyQt5 import QtCore, QtWidgets
 from ui_c_and_b import Ui_CAndBForm
-
+from mainwindow import MainWindow
 
 def t_into_utc(t):
     """converts a datetime (t) without any timezone info into
@@ -17,7 +17,7 @@ def t_into_utc(t):
 # before the controller is set up (or when it is turned off)
 ## - using the 'schedule_pending' flag
 class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
-    def __init__(self, mainwindow, *args, **kwargs):
+    def __init__(self, mainwindow: MainWindow, *args, **kwargs):
         super(CAndBForm, self).__init__(*args, **kwargs)
         self.setupUi(self)
         self.mainwindow = mainwindow
@@ -96,11 +96,13 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
                 self.firstScheduledBackgroundDateTimeEdit.dateTime()
                 .toUTC()
                 .toPyDateTime()
+                .replace(tzinfo=datetime.timezone.utc)
             )
             t0_cal = (
                 self.firstScheduledCalibrationDateTimeEdit.dateTime()
                 .toUTC()
                 .toPyDateTime()
+                .replace(tzinfo=datetime.timezone.utc)
             )
             if ic is not None:
                 ic.schedule_recurring_calibration(

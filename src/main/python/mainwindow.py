@@ -8,7 +8,7 @@ import pprint
 import sys
 import threading
 import time
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Optional
 
 import numpy as np
 import pyqtgraph as pg
@@ -133,8 +133,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.set_dark_theme(self._use_dark_theme)
         self.actionDarkMode.setChecked(self._use_dark_theme)
 
-        self.instrument_controller = None
-        self.config: Configuration = None
+        self.instrument_controller: Optional[MainController] = None
+        self.config: Optional[Configuration] = None
         self.configured_tables: List[str] = []
 
         # multi-panel plot window
