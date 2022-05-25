@@ -23,10 +23,10 @@ def data_to_columns(data):
 def groupby_series(x, y, legend_data):
     x = np.array(x)
     y = np.array(y)
-    legend_data = np.array(legend_data)
     if legend_data is None:
         ret = [(x, y, None)]
     else:
+        legend_data = np.array(legend_data)
         ret = []
         for label in sorted(set(legend_data)):
             mask = legend_data == label
