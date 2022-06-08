@@ -14,7 +14,7 @@ import numpy as np
 import pyqtgraph as pg
 import sip
 from ansto_radon_monitor.configuration import (Configuration,
-                                               config_from_yamlfile)
+                                               config_from_inifile)
 from ansto_radon_monitor.main import setup_logging
 from ansto_radon_monitor.main_controller import MainController, initialize
 from c_and_b import CAndBForm
@@ -252,7 +252,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def onLoadConfiguration(self, s):
         # print(f"Load the configuration... {s}")
         config_fname, config_filter = QtWidgets.QFileDialog.getOpenFileName(
-            self, "Open configuration", ".", "YAML files (*.yaml *.yml)"
+            self, "Open configuration", ".", "Configuration files (*.ini);;All files (*.*)"
         )
         if config_fname == "":
             # user pressed cancel, do nothing
@@ -368,10 +368,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.set_status("Connecting to instrument...", False)
         _logger.debug(f"Reading configuration from {config_fname}")
         try:
-            config = config_from_yamlfile(config_fname)
+            config = config_from_inifile(config_fname)
         except Exception as ex:
+            import traceback
+            
             _logger.warning(
-                f"Exception occured while trying to load configuration: {ex}"
+                f"Exception occured while trying to load configuration: {ex}, {traceback.format_exc()}"
             )
             self.set_status(f"Unable to load configuration: {config_fname}", False)
             return
