@@ -112,6 +112,7 @@ class DataPlotter(object):
         self._plot_objects[idx] = po
 
     def update(self, data):
+        flag_need_regenerate = False
         datac = data_to_columns(data)
         for idx, po in self._plot_objects.items():
             if idx == "legend":
@@ -127,7 +128,16 @@ class DataPlotter(object):
             for series_idx, (x, y, label) in enumerate(
                 groupby_series(x, y, legend_data)
             ):
-                s = po["series"][series_idx]
-                # subtract time.timezone to get display in UTC
-                xfloat = [itm.timestamp() + time.timezone for itm in x]
-                s.setData(x=xfloat, y=y)
+                try:
+                    s = po["series"][series_idx]
+                    # subtract time.timezone to get display in UTC
+                    xfloat = [itm.timestamp() + time.timezone for itm in x]
+                    s.setData(x=xfloat, y=y)
+                except KeyError:
+                    # update failed, plot needs to be regenerated
+                    flag_need_regenerate = True
+
+        if flag_need_regenerate:
+            # regenerate the entire plot
+            self.win.clear()
+            self.setup(self.win, data)
