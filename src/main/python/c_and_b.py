@@ -5,6 +5,7 @@ import time
 from PyQt5 import QtCore, QtWidgets
 from ui_c_and_b import Ui_CAndBForm
 
+
 def t_into_utc(t):
     """converts a datetime (t) without any timezone info into
     the same t but identified as utc"""
@@ -22,10 +23,10 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
         self.mainwindow = mainwindow
         self.schedule_pending = False
         self._controls_to_disable_in_scheduled_mode = [
-            self.calibrateButton,
-            self.backgroundButton,
-            self.stopCalPushButton,
-            self.stopBgPushButton,
+            self.calRadioButton,
+            self.bgRadioButton,
+            self.calbgCheckBox,
+            self.startStopPushButton,
             self.firstScheduledCalibrationDateTimeEdit,
             self.calibrationIntervalSpinBox,
             self.firstScheduledBackgroundDateTimeEdit,
@@ -34,13 +35,18 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
             self.injectSpinBox,
             self.backgroundSpinBox,
         ]
+        self._controls_to_disable_during_onceoff = [
+            self.calRadioButton,
+            self.bgRadioButton,
+            self.calbgCheckBox,
+            self.calbgDateTimeEdit,
+        ]
         self.connect_signals()
         self.restore_state_from_qsettings()
         self.update_local_times()
 
     def connect_signals(self):
-        self.calibrateButton.clicked.connect(self.onCalibrate)
-        self.backgroundButton.clicked.connect(self.onBackground)
+        self.startStopPushButton.clicked.connect(self.onStartStop)
         self.enableScheduleButton.clicked.connect(self.on_enable_schedule_clicked)
 
         self.firstScheduledCalibrationDateTimeEdit.dateTimeChanged.connect(
@@ -49,13 +55,12 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
         self.firstScheduledBackgroundDateTimeEdit.dateTimeChanged.connect(
             self.update_local_times
         )
+        self.calbgDateTimeEdit.dateTimeChanged.connect(self.update_local_times)
 
         # disable calendar edit if the checkbox is disabled
-        self.calCheckBox.toggled.connect(self.calDateTimeEdit.setEnabled)
-        self.bgCheckBox.toggled.connect(self.bgDateTimeEdit.setEnabled)
+        self.calbgCheckBox.toggled.connect(self.calbgDateTimeEdit.setEnabled)
 
-        self.stopBgPushButton.clicked.connect(self.onStopBg)
-        self.stopCalPushButton.clicked.connect(self.onStopCal)
+        self.startStopPushButton.clicked.connect(self.onStartStop)
 
         # TODO: consider using a single timer in mainwindow
         self.redraw_timer = QtCore.QTimer()
@@ -63,7 +68,35 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
         self.redraw_timer.timeout.connect(self.update_displays)
         self.redraw_timer.start()
 
+    def onStartStop(self):
+        print(f"On start stop, isChecked: {self.startStopPushButton.isChecked()}")
+        flag_start = self.startStopPushButton.isChecked()
+        flag_cal = self.calRadioButton.isChecked()
+        flag_bg = self.bgRadioButton.isChecked()
+        assert flag_cal == (not flag_bg)
+        if flag_start:
+            for itm in self._controls_to_disable_during_onceoff:
+                itm.setEnabled(False)
+            self.startStopPushButton.setText("Stop")
+            if flag_cal:
+                self.onCalibrate()
+            elif flag_bg:
+                self.onBackground()
+        else:
+            self.mainwindow.instrument_controller.stop_background()
+            self.mainwindow.instrument_controller.stop_calibration()
+            self.update_main_display()
+            for itm in self._controls_to_disable_during_onceoff:
+                itm.setEnabled(True)
+            # special case - enabled only if option box is checked
+            self.calbgDateTimeEdit.setEnabled(self.calbgCheckBox.isChecked())
+            self.startStopPushButton.setText("Start")
+
     def update_local_times(self):
+        t0_single = self.calbgDateTimeEdit.dateTime().toPyDateTime()
+        tstr = str(t_into_utc(t0_single).astimezone())
+        self.calbgLocalTimeLabel.setText(tstr)
+
         t0_background = (
             self.firstScheduledBackgroundDateTimeEdit.dateTime().toPyDateTime()
         )
@@ -144,10 +177,17 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
         # update the calibration time widgets
         # next 30 min interval
         next30min = datetime.datetime.fromtimestamp(
-            math.ceil(time.time() / 60 / 30) * 60 * 30
+            math.ceil(time.time() / 60 / 30) * 60 * 30, tz=datetime.timezone.utc
         )
-        self.bgDateTimeEdit.setMinimumDateTime(next30min)
-        self.calDateTimeEdit.setMinimumDateTime(next30min)
+        self.calbgDateTimeEdit.setMinimumDateTime(next30min)
+
+        # A period check that a cal or bg is running, if the start button is checked
+        if self.startStopPushButton.isChecked():
+            ic = self.mainwindow.instrument_controller
+            if ic is None:
+                self.startStopPushButton.setChecked(False)
+            elif not ic.cal_running and not ic.bg_running:
+                self.startStopPushButton.setChecked(False)
 
         # A periodic check that the
         # schedule is correctly engaged, if the button has been
@@ -167,10 +207,10 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
         ):
             self.on_enable_schedule_clicked(True)
 
-    def onCalibrate(self, s):
-        if self.calDateTimeEdit.isEnabled():
+    def onCalibrate(self, s=None):
+        if self.calbgDateTimeEdit.isEnabled():
             start_time = (
-                self.calDateTimeEdit.dateTime()
+                self.calbgDateTimeEdit.dateTime()
                 .toUTC()
                 .toPyDateTime()
                 .replace(tzinfo=datetime.timezone.utc)
@@ -186,15 +226,15 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
         )
         self.update_main_display()
 
-    def onStopCal(self, s):
+    def onStopCal(self, s=None):
         self.mainwindow.instrument_controller.stop_calibration()
         # TODO: re-schedule calibrations if enabled
         self.update_main_display()
 
-    def onBackground(self, s):
-        if self.bgDateTimeEdit.isEnabled():
+    def onBackground(self, s=None):
+        if self.calbgDateTimeEdit.isEnabled():
             start_time = (
-                self.bgDateTimeEdit.dateTime()
+                self.calbgDateTimeEdit.dateTime()
                 .toUTC()
                 .toPyDateTime()
                 .replace(tzinfo=datetime.timezone.utc)
