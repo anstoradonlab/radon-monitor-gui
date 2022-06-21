@@ -25,7 +25,7 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
         self._controls_to_disable_in_scheduled_mode = [
             self.calRadioButton,
             self.bgRadioButton,
-            self.calbgCheckBox,
+            self.startLaterCheckBox,
             self.startStopPushButton,
             self.firstScheduledCalibrationDateTimeEdit,
             self.calibrationIntervalSpinBox,
@@ -38,7 +38,7 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
         self._controls_to_disable_during_onceoff = [
             self.calRadioButton,
             self.bgRadioButton,
-            self.calbgCheckBox,
+            self.startLaterCheckBox,
             self.calbgDateTimeEdit,
         ]
         self.connect_signals()
@@ -46,7 +46,6 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
         self.update_local_times()
 
     def connect_signals(self):
-        self.startStopPushButton.clicked.connect(self.onStartStop)
         self.enableScheduleButton.clicked.connect(self.on_enable_schedule_clicked)
 
         self.firstScheduledCalibrationDateTimeEdit.dateTimeChanged.connect(
@@ -58,7 +57,7 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
         self.calbgDateTimeEdit.dateTimeChanged.connect(self.update_local_times)
 
         # disable calendar edit if the checkbox is disabled
-        self.calbgCheckBox.toggled.connect(self.calbgDateTimeEdit.setEnabled)
+        self.startLaterCheckBox.toggled.connect(self.calbgDateTimeEdit.setEnabled)
 
         self.startStopPushButton.clicked.connect(self.onStartStop)
 
@@ -69,7 +68,6 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
         self.redraw_timer.start()
 
     def onStartStop(self):
-        print(f"On start stop, isChecked: {self.startStopPushButton.isChecked()}")
         flag_start = self.startStopPushButton.isChecked()
         flag_cal = self.calRadioButton.isChecked()
         flag_bg = self.bgRadioButton.isChecked()
@@ -83,13 +81,19 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
             elif flag_bg:
                 self.onBackground()
         else:
-            self.mainwindow.instrument_controller.stop_background()
-            self.mainwindow.instrument_controller.stop_calibration()
+            if flag_bg:
+                self.mainwindow.instrument_controller.stop_background()
+            elif flag_cal:
+                self.mainwindow.instrument_controller.stop_calibration()
+            else:
+                _logger.error("Programming error - one of BG or cal should be flagged")
+                self.mainwindow.instrument_controller.stop_background()
+                self.mainwindow.instrument_controller.stop_calibration()
             self.update_main_display()
             for itm in self._controls_to_disable_during_onceoff:
                 itm.setEnabled(True)
             # special case - enabled only if option box is checked
-            self.calbgDateTimeEdit.setEnabled(self.calbgCheckBox.isChecked())
+            self.calbgDateTimeEdit.setEnabled(self.startLaterCheckBox.isChecked())
             self.startStopPushButton.setText("Start")
 
     def update_local_times(self):
@@ -184,10 +188,14 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
         # A period check that a cal or bg is running, if the start button is checked
         if self.startStopPushButton.isChecked():
             ic = self.mainwindow.instrument_controller
-            if ic is None:
+            reset_onceoff_controls = (ic is None) or (not ic.cal_running and not ic.bg_running)
+            if reset_onceoff_controls:
                 self.startStopPushButton.setChecked(False)
-            elif not ic.cal_running and not ic.bg_running:
-                self.startStopPushButton.setChecked(False)
+                for itm in self._controls_to_disable_during_onceoff:
+                    itm.setEnabled(True)
+                # special case - enabled only if option box is checked
+                self.calbgDateTimeEdit.setEnabled(self.startLaterCheckBox.isChecked())
+                self.startStopPushButton.setText("Start")
 
         # A periodic check that the
         # schedule is correctly engaged, if the button has been
@@ -208,10 +216,9 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
             self.on_enable_schedule_clicked(True)
 
     def onCalibrate(self, s=None):
-        if self.calbgDateTimeEdit.isEnabled():
+        if self.startLaterCheckBox.isChecked():
             start_time = (
                 self.calbgDateTimeEdit.dateTime()
-                .toUTC()
                 .toPyDateTime()
                 .replace(tzinfo=datetime.timezone.utc)
             )
@@ -232,10 +239,9 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
         self.update_main_display()
 
     def onBackground(self, s=None):
-        if self.calbgDateTimeEdit.isEnabled():
+        if self.startLaterCheckBox.isChecked():
             start_time = (
                 self.calbgDateTimeEdit.dateTime()
-                .toUTC()
                 .toPyDateTime()
                 .replace(tzinfo=datetime.timezone.utc)
             )
