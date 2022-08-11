@@ -216,7 +216,11 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
             self.graph_widget.removeItem(itm)
             self.plot_series = []
 
-        data_is_not_numeric = True
+        # WARNING - MAGIC NUMBERS (assumes 10-sec)
+        # sampling interval, TODO: fix
+        conv_width = 6 * 30 // 2
+
+        data_is_not_numeric = False
         for idx, (x, y, label) in enumerate(groupby_series(x_all, y_all, legend_data)):
             dx = np.median(np.diff(x))
             xplt = np.empty(len(x) * 2)
@@ -250,11 +254,8 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
                 xplt[::2] = x - dx
                 xplt[1::2] = x
                 # 30 minutes smoothing
-                # WARNING - MAGIC NUMBERS (assumes 10-sec)
-                # sampling interval, TODO: fix
-                conv_width = 6 * 30 // 2
                 # only plot the smoothed version if there is enough data
-                if len(y) < conv_width * 3:
+                if len(y) > conv_width * 3:
                     conv = np.ones(conv_width + 1, dtype=float)
                     conv /= conv.sum()
                     y_s = np.convolve(conv, np.array(y).astype(float), mode="same")
