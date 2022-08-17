@@ -8,7 +8,7 @@ import pprint
 import sys
 import threading
 import time
-from typing import Dict, List, Union, Optional
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 import pyqtgraph as pg
@@ -17,13 +17,14 @@ from ansto_radon_monitor.configuration import (Configuration,
                                                config_from_inifile)
 from ansto_radon_monitor.main import setup_logging
 from ansto_radon_monitor.main_controller import MainController, initialize
-from c_and_b import CAndBForm
-from data_plotter import DataPlotter
-from data_view import DataViewForm
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 # from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtCore import QSettings, Qt, QTimer
+
+from c_and_b import CAndBForm
+from data_plotter import DataPlotter
+from data_view import DataViewForm
 from sensitivity_sweep import SensitivitySweepForm
 from system_information import SystemInformationForm
 from ui_mainwindow import Ui_MainWindow
@@ -252,7 +253,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def onLoadConfiguration(self, s):
         # print(f"Load the configuration... {s}")
         config_fname, config_filter = QtWidgets.QFileDialog.getOpenFileName(
-            self, "Open configuration", ".", "Configuration files (*.ini);;All files (*.*)"
+            self,
+            "Open configuration",
+            ".",
+            "Configuration files (*.ini);;All files (*.*)",
         )
         if config_fname == "":
             # user pressed cancel, do nothing
@@ -371,7 +375,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             config = config_from_inifile(config_fname)
         except Exception as ex:
             import traceback
-            
+
             _logger.warning(
                 f"Exception occured while trying to load configuration: {ex}, {traceback.format_exc()}"
             )

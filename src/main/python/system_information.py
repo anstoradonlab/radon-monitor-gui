@@ -6,6 +6,7 @@ import serial.tools.list_ports
 from ansto_radon_monitor.labjack_interface import list_all_u12
 from pycampbellcr1000 import CR1000
 from PyQt5 import QtCore, QtWidgets
+
 from ui_system_information import Ui_SystemInformationForm
 
 
@@ -33,15 +34,19 @@ def get_clock_offset(cr1000):
 
     return clock_offset, halfquery
 
+
 def increment_datalogger_clock(cr1000: CR1000, increment_dt: float):
     """
     Adjust time by adding "increment_dt" seconds
     """
     t = increment_dt
     increment_seconds = int(t)
-    increment_nanoseconds = int((t-increment_seconds)*1e9)
+    increment_nanoseconds = int((t - increment_seconds) * 1e9)
     cr1000.pakbus.get_clock_cmd((increment_seconds, increment_nanoseconds))
-    hdr, msg, sdt1 = cr1000.send_wait(cr1000.pakbus.get_clock_cmd((increment_seconds, increment_nanoseconds)))
+    hdr, msg, sdt1 = cr1000.send_wait(
+        cr1000.pakbus.get_clock_cmd((increment_seconds, increment_nanoseconds))
+    )
+
 
 def synchronise_clock(cr1000, force_sync=False):
     s = ""
@@ -58,7 +63,7 @@ def synchronise_clock(cr1000, force_sync=False):
         s += f"Datalogger and computer clocks are out of synchronisation by less than {minimum_time_difference_seconds} seconds, not adjusting time"
 
     else:
-        increment_datalogger_clock(cr1000, - clock_offset)
+        increment_datalogger_clock(cr1000, -clock_offset)
         clock_offset, halfquery = get_clock_offset(cr1000)
         s += f"Synchronised datalogger clock with computer clock, time difference (datalogger minus computer): {clock_offset} seconds"
     return s
@@ -213,6 +218,7 @@ class SystemInformationForm(QtWidgets.QWidget, Ui_SystemInformationForm):
         except Exception as e:
             s += f'Error occured: "{e}"'
             import traceback
+
             s += traceback.format_exc()
         self.dataLoggerTextBrowser.setPlainText(s)
 

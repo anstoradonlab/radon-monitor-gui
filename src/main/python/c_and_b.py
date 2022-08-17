@@ -1,9 +1,14 @@
 import datetime
+import logging
 import math
 import time
 
 from PyQt5 import QtCore, QtWidgets
+
+from cal_bg_start_time_widget import CalBgStartWidget
 from ui_c_and_b import Ui_CAndBForm
+
+_logger = logging.getLogger(__name__)
 
 
 def t_into_utc(t):
@@ -23,43 +28,99 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
         self.mainwindow = mainwindow
         self.schedule_pending = False
         self._controls_to_disable_in_scheduled_mode = [
-            self.calRadioButton,
-            self.bgRadioButton,
+            self.operationTypeComboBox,
             self.startLaterCheckBox,
             self.startStopPushButton,
-            self.firstScheduledCalibrationDateTimeEdit,
+            self.cal_bg_start_times_layout,
             self.calibrationIntervalSpinBox,
-            self.firstScheduledBackgroundDateTimeEdit,
             self.backgroundIntervalSpinBox,
             self.flushSpinBox,
             self.injectSpinBox,
             self.backgroundSpinBox,
         ]
         self._controls_to_disable_during_onceoff = [
-            self.calRadioButton,
-            self.bgRadioButton,
+            self.operationTypeComboBox,
             self.startLaterCheckBox,
             self.calbgDateTimeEdit,
         ]
+        self._finalise_ui()
         self.connect_signals()
-        self.restore_state_from_qsettings()
+        try:
+            self.restore_state_from_qsettings()
+        except Exception as e:
+            import traceback
+
+            bt = traceback.format_exc()
+            _logger.error(
+                f"Unable to restore calibration/background state from QSettings.  Check cal/background configuration and restart. {bt}"
+            )
         self.update_local_times()
+
+    def _finalise_ui(self):
+        """Finish setting up the UI
+        
+        * for each detector, create a cal/bg start time widget
+        """
+        self._generate_cal_bg_start_time_widgets()
+        self._setup_calibration_options()
+
+    def _generate_cal_bg_start_time_widgets(self):
+        """
+        For each detector in the configuration, create a cal/bg
+        start time widget
+        """
+        config = self.mainwindow.config
+        if config is None:
+            return
+        container = self.cal_bg_start_times_layout
+        while len(container) > 0:
+            container.removeWidget(container.children[0])
+        self._start_time_widgets = []
+        for ii, detector_config in enumerate(config.detectors):
+            widget = CalBgStartWidget(
+                sequence_number=ii + 1, detector_name=detector_config.name
+            )
+            container.addWidget(widget)
+            self._start_time_widgets.append(widget)
+
+    def _setup_calibration_options(self):
+        """Populate the options in the combobox
+        """
+        combobox = self.operationTypeComboBox
+        combobox.clear()
+        config = self.mainwindow.config
+        if config is None:
+            return
+        num_detectors = len(self.mainwindow.config.detectors)
+        operations = []
+        for ii in range(num_detectors):
+            for calbg in ("Calibrate", "Background"):
+                s = f"{calbg} detector {ii+1}"
+                operations.append(s)
+
+        combobox.addItems(operations)
+
+    def _read_gui_state(self):
+        """
+        Read data from GUI into a dict
+        """
+        # TODO: write this and use it instead of reading from each widget
+        #       individually!
+        background_interval_days = int(self.backgroundIntervalSpinBox.value())
+        bg_interval = datetime.timedelta(days=background_interval_days)
+        cal_interval_days = int(self.calibrationIntervalSpinBox.value())
+        cal_interval = datetime.timedelta(days=cal_interval_days)
 
     def connect_signals(self):
         self.enableScheduleButton.clicked.connect(self.on_enable_schedule_clicked)
-
-        self.firstScheduledCalibrationDateTimeEdit.dateTimeChanged.connect(
-            self.update_local_times
-        )
-        self.firstScheduledBackgroundDateTimeEdit.dateTimeChanged.connect(
-            self.update_local_times
-        )
+        # once-off calibration/bg time
         self.calbgDateTimeEdit.dateTimeChanged.connect(self.update_local_times)
-
         # disable calendar edit if the checkbox is disabled
         self.startLaterCheckBox.toggled.connect(self.calbgDateTimeEdit.setEnabled)
-
         self.startStopPushButton.clicked.connect(self.onStartStop)
+        self.calibrationIntervalSpinBox.valueChanged.connect(
+            self.on_cal_interval_changed
+        )
 
         # TODO: consider using a single timer in mainwindow
         self.redraw_timer = QtCore.QTimer()
@@ -67,48 +128,84 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
         self.redraw_timer.timeout.connect(self.update_displays)
         self.redraw_timer.start()
 
+    def on_cal_interval_changed(self, s):
+        """Keep the background interval set to a constant multiple of the cal interval"""
+        background_interval_days = int(self.backgroundIntervalSpinBox.value())
+        cal_interval_days = int(self.calibrationIntervalSpinBox.value())
+
+        if cal_interval_days == 0:
+            cal_interval_days = 1
+        # round-off to multiple of cal_interval_days
+        v = int(round(background_interval_days / cal_interval_days)) * cal_interval_days
+        self.backgroundIntervalSpinBox.setSingleStep(1)
+        self.backgroundIntervalSpinBox.setValue(v)
+        self.backgroundIntervalSpinBox.setSingleStep(cal_interval_days)
+
     def onStartStop(self):
+        # read some state from the gui
+        if self.startLaterCheckBox.isChecked():
+            start_time = (
+                self.calbgDateTimeEdit.dateTime()
+                .toPyDateTime()
+                .replace(tzinfo=datetime.timezone.utc)
+            )
+        else:
+            start_time = None
+        flush_duration_sec = self.flushSpinBox.value() * 3600
+        inject_duration_sec = self.injectSpinBox.value() * 3600
+        background_duration_sec = self.backgroundSpinBox.value() * 3600.0
         flag_start = self.startStopPushButton.isChecked()
-        flag_cal = self.calRadioButton.isChecked()
-        flag_bg = self.bgRadioButton.isChecked()
-        assert flag_cal == (not flag_bg)
+        operation_str = self.operationTypeComboBox.currentText()
+        if len(operation_str) == 0:
+            # nothing selected yet
+            _logger.info("No operation selected")
+            return
+        # operation_str is a string like "Calibrate detector 1" or
+        # "Background detector 2"
+        detector_idx = int(operation_str.split()[-1]) - 1
+        op = operation_str.split()[0].lower()
+
         if flag_start:
             for itm in self._controls_to_disable_during_onceoff:
                 itm.setEnabled(False)
             self.startStopPushButton.setText("Stop")
-            if flag_cal:
-                self.onCalibrate()
-            elif flag_bg:
-                self.onBackground()
+            if op == "calibrate":
+                self.mainwindow.instrument_controller.run_calibration(
+                    start_time=start_time,
+                    flush_duration=flush_duration_sec,
+                    inject_duration=inject_duration_sec,
+                    detector_idx=detector_idx,
+                )
+            elif op == "background":
+                self.mainwindow.instrument_controller.run_background(
+                    start_time=start_time,
+                    duration=background_duration_sec,
+                    detector_idx=detector_idx,
+                )
+            else:
+                _logger.error(f"Programming error - unexpected value for op: {op}")
+
         else:
-            if flag_bg:
+            if op == "background":
                 self.mainwindow.instrument_controller.stop_background()
-            elif flag_cal:
+            elif op == "calibrate":
                 self.mainwindow.instrument_controller.stop_calibration()
             else:
-                _logger.error("Programming error - one of BG or cal should be flagged")
+                _logger.error(f"Programming error - unexpected value for op: {op}")
                 self.mainwindow.instrument_controller.stop_background()
                 self.mainwindow.instrument_controller.stop_calibration()
-            self.update_main_display()
             for itm in self._controls_to_disable_during_onceoff:
                 itm.setEnabled(True)
             # special case - enabled only if option box is checked
             self.calbgDateTimeEdit.setEnabled(self.startLaterCheckBox.isChecked())
             self.startStopPushButton.setText("Start")
 
+        self.update_main_display()
+
     def update_local_times(self):
         t0_single = self.calbgDateTimeEdit.dateTime().toPyDateTime()
         tstr = str(t_into_utc(t0_single).astimezone())
         self.calbgLocalTimeLabel.setText(tstr)
-
-        t0_background = (
-            self.firstScheduledBackgroundDateTimeEdit.dateTime().toPyDateTime()
-        )
-        tstr = str(t_into_utc(t0_background).astimezone())
-        self.bgLocalTimeLabel.setText(tstr)
-        t0_cal = self.firstScheduledCalibrationDateTimeEdit.dateTime().toPyDateTime()
-        tstr = str(t_into_utc(t0_cal).astimezone())
-        self.calLocalTimeLabel.setText(tstr)
 
     def on_enable_schedule_clicked(self, s):
 
@@ -120,33 +217,31 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
             background_duration = self.backgroundSpinBox.value() * 3600.0
             inject_duration = self.injectSpinBox.value() * 3600.0
             flush_duration = self.flushSpinBox.value() * 3600.0
-            # intervals are required in datetime.timedelta, but in the box are days
-            background_interval = datetime.timedelta(
-                days=self.backgroundIntervalSpinBox.value()
-            )
-            cal_interval = datetime.timedelta(
-                days=self.calibrationIntervalSpinBox.value()
-            )
-            # t0 for each
-            t0_background = (
-                self.firstScheduledBackgroundDateTimeEdit.dateTime()
-                .toUTC()
-                .toPyDateTime()
-                .replace(tzinfo=datetime.timezone.utc)
-            )
-            t0_cal = (
-                self.firstScheduledCalibrationDateTimeEdit.dateTime()
-                .toUTC()
-                .toPyDateTime()
-                .replace(tzinfo=datetime.timezone.utc)
-            )
+
+            bg_times = [itm.bg_start_time for itm in self._start_time_widgets]
+            cal_times = [itm.cal_start_time for itm in self._start_time_widgets]
+            background_interval_days = int(self.backgroundIntervalSpinBox.value())
+            background_interval = datetime.timedelta(days=background_interval_days)
+            cal_interval_days = int(self.calibrationIntervalSpinBox.value())
+            cal_interval = datetime.timedelta(days=cal_interval_days)
+
             if ic is not None:
-                ic.schedule_recurring_calibration(
-                    flush_duration, inject_duration, t0_cal, cal_interval
-                )
-                ic.schedule_recurring_background(
-                    background_duration, t0_background, background_interval
-                )
+                for ii, (t0_background, t0_cal) in enumerate(zip(bg_times, cal_times)):
+                    if cal_interval_days > 0:
+                        ic.schedule_recurring_calibration(
+                            flush_duration,
+                            inject_duration,
+                            t0_cal,
+                            cal_interval,
+                            detector_idx=ii,
+                        )
+                    if background_interval_days > 0:
+                        ic.schedule_recurring_background(
+                            background_duration,
+                            t0_background,
+                            background_interval,
+                            detector_idx=ii,
+                        )
                 self.schedule_pending = False
             else:
                 self.schedule_pending = True
@@ -159,6 +254,10 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
                 ic.stop_calibration()
                 ic.stop_background()
         for itm in self._controls_to_disable_in_scheduled_mode:
+            itm.setEnabled(not s)
+        # disabling the parent layout doesn't seem to disable the
+        # start time widgets
+        for itm in self._start_time_widgets:
             itm.setEnabled(not s)
         self.scheduleEngagedLabel.setText(msg)
         self.enableScheduleButton.setText(button_msg)
@@ -188,7 +287,9 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
         # A period check that a cal or bg is running, if the start button is checked
         if self.startStopPushButton.isChecked():
             ic = self.mainwindow.instrument_controller
-            reset_onceoff_controls = (ic is None) or (not ic.cal_running and not ic.bg_running)
+            reset_onceoff_controls = (ic is None) or (
+                not ic.cal_running and not ic.bg_running
+            )
             if reset_onceoff_controls:
                 self.startStopPushButton.setChecked(False)
                 for itm in self._controls_to_disable_during_onceoff:
@@ -265,22 +366,11 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
         qs.setValue("inject_duration", inject_duration)
         flush_duration = self.flushSpinBox.value()
         qs.setValue("flush_duration", flush_duration)
-        # intervals are required in datetime.timedelta, but in the box are days
-        background_interval = datetime.timedelta(
-            days=self.backgroundIntervalSpinBox.value()
-        )
-        qs.setValue("background_interval", background_interval)
-        cal_interval = datetime.timedelta(days=self.calibrationIntervalSpinBox.value())
-        qs.setValue("cal_interval", cal_interval)
-        # t0 for each
-        t0_background = (
-            self.firstScheduledBackgroundDateTimeEdit.dateTime().toUTC().toPyDateTime()
-        )
-        qs.setValue("t0_background", t0_background)
-        t0_cal = (
-            self.firstScheduledCalibrationDateTimeEdit.dateTime().toUTC().toPyDateTime()
-        )
-        qs.setValue("t0_cal", t0_cal)
+
+        bg_times = [itm.bg_start_time for itm in self._start_time_widgets]
+        qs.setValue("t0_background", bg_times)
+        cal_times = [itm.cal_start_time for itm in self._start_time_widgets]
+        qs.setValue("t0_cal", cal_times)
 
         # schedule enabled/disabled
         qs.setValue("schedule_enabled", self.enableScheduleButton.isChecked())
@@ -303,14 +393,28 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
             days = int(cal_interval.total_seconds() / 3600.0 / 24.0)
             self.calibrationIntervalSpinBox.setValue(days)
 
-        t0_background = qs.value("t0_background")
-        if t0_background is not None:
-            t0_background = t_into_utc(t0_background)
-            self.firstScheduledBackgroundDateTimeEdit.setDateTime(t0_background)
-        t0_cal = qs.value("t0_cal")
-        if t0_cal is not None:
-            t0_cal = t_into_utc(t0_cal)
-            self.firstScheduledCalibrationDateTimeEdit.setDateTime(t0_cal)
+        bg_times = qs.value("t0_background")
+        # should be an array of datetimes, but the array length might be
+        # wrong or it might be a single value left over from a previous
+        # version of our software
+        if type(bg_times) == type([]):
+            for ii, t in enumerate(bg_times):
+                try:
+                    self._start_time_widgets[ii].bg_start_time = t
+                except Exception as e:
+                    _logger.error(
+                        f"Unable to read background start time from QSettings.  Detector {ii+1}, bg_times: {bg_times}"
+                    )
+        # repeat for cal times
+        cal_times = qs.value("t0_cal")
+        if type(cal_times) == type([]):
+            for ii, t in enumerate(cal_times):
+                try:
+                    self._start_time_widgets[ii].cal_start_time = t
+                except Exception as e:
+                    _logger.error(
+                        f"Unable to read background start time from QSettings.  Detector {ii+1}, bg_times: {bg_times}"
+                    )
         schedule_state = qs.value("schedule_enabled")
         if schedule_state is not None:
             # instead of using self.enableScheduleButton.setChecked(schedule_state)
@@ -323,3 +427,7 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
     def hideEvent(self, event):
         self.save_state_to_qsettings()
         super(CAndBForm, self).hideEvent(event)
+
+    def __del__(self):
+        self.redraw_timer.disconnect()
+        self.redraw_timer.deleteLater()

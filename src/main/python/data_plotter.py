@@ -6,8 +6,9 @@ import typing
 
 import numpy as np
 import pyqtgraph as pg
-from plotutils import data_to_columns, get_pen, groupby_series
 from PyQt5 import QtCore, QtWidgets
+
+from plotutils import data_to_columns, get_pen, groupby_series
 
 _logger = logging.getLogger(__name__)
 
@@ -83,17 +84,13 @@ class DataPlotter(object):
             _logger.error(f"Encounted error while generating plot: {e}")
             print(str(data.keys()))
             return
-        p = win.addPlot(
-            row=idx,
-            col=0,
-            axisItems={
-                "bottom": pg.DateAxisItem(),
-            },
-        )
+        p = win.addPlot(row=idx, col=0, axisItems={"bottom": pg.DateAxisItem(),},)
+        labelStyle = {"font-size": "10pt"}
         p.setLabel(
             "left",
             self._name_dict.get(yvar, yvar),
             units=self._units_dict.get(yvar, "Unknown units"),
+            **labelStyle,
         )
         # do not convert units from e.g. V to kV
         p.getAxis("left").enableAutoSIPrefix(False)

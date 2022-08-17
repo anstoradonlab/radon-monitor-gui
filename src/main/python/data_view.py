@@ -5,10 +5,11 @@ from typing import Dict
 
 import numpy as np
 import pyqtgraph as pg
-from plotutils import groupby_series
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import QSettings, Qt, QTimer
 from pyqtgraph import PlotWidget
+
+from plotutils import groupby_series
 from ui_data_view import Ui_DataViewForm
 
 
@@ -230,6 +231,8 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
             self.graph_widget.removeItem(itm)
             self.plot_series = []
 
+        dark_mode = self.main_window._use_dark_theme
+
         # WARNING - MAGIC NUMBERS (assumes 10-sec)
         # sampling interval, TODO: fix
         conv_width = 6 * 30 // 2
@@ -250,8 +253,15 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
                 break
             color = self.get_color(idx)
             if do_smoothing:
-                # darken the color
-                color = color[0] // 2, color[1] // 2, color[2] // 2
+                # blend the color into the background
+                if dark_mode:
+                    color = color[0] // 2, color[1] // 2, color[2] // 2
+                else:
+                    color = (
+                        (color[0] + 255) // 2,
+                        (color[1] + 255) // 2,
+                        (color[2] + 255) // 2,
+                    )
             pen = pg.mkPen(color)
             p = self.graph_widget.plot(xplt, yplt, name=label, pen=pen)
             self.plot_series.append(p)
