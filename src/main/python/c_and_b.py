@@ -58,7 +58,7 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
 
     def _finalise_ui(self):
         """Finish setting up the UI
-        
+
         * for each detector, create a cal/bg start time widget
         """
         self._generate_cal_bg_start_time_widgets()

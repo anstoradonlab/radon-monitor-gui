@@ -57,7 +57,7 @@ class CalBgStartWidget(QtWidgets.QWidget, Ui_CalBgStartWidget):
 
     def _update_local_times(self):
         """
-        Read the time in the UTC boxes and write Local Time to the 
+        Read the time in the UTC boxes and write Local Time to the
         Local time displays
         """
         t0_background = (

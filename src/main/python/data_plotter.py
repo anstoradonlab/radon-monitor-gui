@@ -84,7 +84,13 @@ class DataPlotter(object):
             _logger.error(f"Encounted error while generating plot: {e}")
             print(str(data.keys()))
             return
-        p = win.addPlot(row=idx, col=0, axisItems={"bottom": pg.DateAxisItem(),},)
+        p = win.addPlot(
+            row=idx,
+            col=0,
+            axisItems={
+                "bottom": pg.DateAxisItem(),
+            },
+        )
         labelStyle = {"font-size": "10pt"}
         p.setLabel(
             "left",
