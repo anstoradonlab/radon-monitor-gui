@@ -148,6 +148,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Load the UI Page
         # uic.loadUi(appctxt.get_resource("main_window.ui"), baseinstance=self)
 
+        self.maintenanceModeFrame.setVisible(False)
+
         self.setup_statusbar()
 
         logTextBox = self.logArea
@@ -222,6 +224,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             app.setStyle("Native")
             app.setPalette(self._default_palette)
 
+    def set_maintenance_mode(self, mm_on=False):
+        app = QtWidgets.QApplication.instance()
+        self.qsettings.setValue("maintenance_mode_on", mm_on)
+        self._maintenance_mode = mm_on
+        self.maintenanceModeFrame.setVisible(mm_on)
+        # in case this was called from elsewhere, sync the checkmark
+        # in the menu item
+        self.actionMaintence_Mode.setChecked(mm_on)
+        if self.instrument_controller is not None:
+            self.instrument_controller.maintenance_mode = mm_on
+
     def set_status(self, message, happy=None):
         if happy is None:
             icon = ""
@@ -243,6 +256,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionShow_Data.triggered.connect(self.show_data)
         self.actionViewCalibration.triggered.connect(self.view_calibration_dialog)
         self.actionDarkMode.triggered.connect(self.set_dark_theme)
+        self.actionMaintence_Mode.triggered.connect(self.set_maintenance_mode)
+        self.exitMaintenancePushButton.clicked.connect(self.set_maintenance_mode)
         self.actionViewSystemInformation.triggered.connect(
             self.view_system_information_dialog
         )
@@ -363,6 +378,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def begin_controlling(self, config_fname):
 
+        # TODO: more of the gui needs to be shutdown/re-configured
+        #  * calibration dialog
+        #  * large plots
+
         if self.instrument_controller is not None:
             self.instrument_controller.shutdown()
         # update times need to be reset
@@ -387,6 +406,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         setup_logging(config.loglevel, config.logfile)
 
         self.instrument_controller = initialize(config, mode="thread")
+
+        # sync the gui's Maintenance mode state with the backend
+        mm = self.instrument_controller.maintenance_mode
+        self.actionMaintence_Mode.setChecked(mm)
+        self.maintenanceModeFrame.setVisible(mm)
 
     def closeEvent(self, event):
         # catch the close event
