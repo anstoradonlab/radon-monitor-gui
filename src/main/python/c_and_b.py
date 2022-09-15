@@ -280,7 +280,7 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
         # update the calibration time widgets
         # next 30 min interval
         next30min = datetime.datetime.fromtimestamp(
-            math.ceil(time.time() / 60 / 30) * 60 * 30, tz=datetime.timezone.utc
+            math.ceil(time.time() / 60 / 30) * 60 * 30
         )
         self.calbgDateTimeEdit.setMinimumDateTime(next30min)
 
