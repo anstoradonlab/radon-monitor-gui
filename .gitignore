@@ -51,7 +51,7 @@ MANIFEST
 .venv*/
 venv*/
 minenv/
-installerenv/
+installervenv/
 
 # Data folder and database, created when app runs
 data/
