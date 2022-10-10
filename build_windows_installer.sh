@@ -5,7 +5,7 @@
 
 # create minimal environment to get the right version of Python
 
-if [[ ! -d ./env ]]
+if [[ ! -d ./minenv ]]
 then
     conda create -y --prefix ./minenv
 fi
@@ -24,7 +24,7 @@ conda activate ./minenv
 
 python -m venv venv
 venv/Scripts/activate
-pip install -r requirements/windows.txt
+python -m pip install -r requirements/windows.txt
 
 # debug/release build
 fbs freeze --debug

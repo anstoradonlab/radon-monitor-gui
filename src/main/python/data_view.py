@@ -201,6 +201,8 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
         c0, r0 = idx.column(), idx.row()
         # print(f'{c0,r0}')
         self.selected_column = idx.column()
+        print("***", idx)
+        print("****", idx.parent())
 
     def plot(self, x, y, legend_data=None, title=None):
         if self.legend is not None:
