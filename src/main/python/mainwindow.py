@@ -149,6 +149,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # uic.loadUi(appctxt.get_resource("main_window.ui"), baseinstance=self)
 
         self.maintenanceModeFrame.setVisible(False)
+        self.alertFrame.setVisible(False)
 
         self.setup_statusbar()
 
@@ -235,6 +236,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if self.instrument_controller is not None:
             self.instrument_controller.maintenance_mode = mm_on
 
+    def show_or_hide_calibration_alert(self):
+        cal_active = False
+        ic = self.instrument_controller
+        if ic is not None:
+            try:
+                ic_status = ic.get_status()
+                cal_unit_message = ic_status['CalibrationUnitThread']['status']['message'].lower()
+                cal_active = not(cal_unit_message == 'normal operation' or cal_unit_message == 'no connection')
+            except Exception as ex:
+                import traceback
+                msg = traceback.format_exc(ex)
+                _logger.error(msg)
+
+        self.alertFrame.setVisible(cal_active)
+
+
     def set_status(self, message, happy=None):
         if happy is None:
             icon = ""
@@ -250,10 +267,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             data_dir = os.path.realpath(self.config.data_dir)
             QtGui.QDesktopServices.openUrl(QtCore.QUrl.fromLocalFile(data_dir))
 
+    def sync_output(self):
+        if self.instrument_controller is not None:
+            self.instrument_controller.backup_now()
+            
+
     def connect_signals(self):
         self.actionLoad_Configuration.triggered.connect(self.onLoadConfiguration)
         self.actionQuit.triggered.connect(self.close)
         self.actionShow_Data.triggered.connect(self.show_data)
+        self.actionSync_Output.triggered.connect(self.sync_output)
         self.actionViewCalibration.triggered.connect(self.view_calibration_dialog)
         self.actionDarkMode.triggered.connect(self.set_dark_theme)
         self.actionMaintence_Mode.triggered.connect(self.set_maintenance_mode)
@@ -438,7 +461,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             return
         self.update_plots("Results")
         self.update_plot_data("RTV")
-        self.set_status(ic.get_status()["summary"], None)
+        ic_status = ic.get_status()
+        self.set_status(ic_status["summary"], None)
+        # if the Calibration Unit is active then turn on a banner display
+        self.show_or_hide_calibration_alert()
         tables = ic.list_data_tables()
         html = ic.html_current_measurement()
         self.hudTextBrowser.setHtml(html)

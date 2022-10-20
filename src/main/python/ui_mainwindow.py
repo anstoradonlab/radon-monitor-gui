@@ -11,7 +11,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(742, 827)
+        MainWindow.resize(597, 569)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
@@ -55,6 +55,16 @@ class Ui_MainWindow(object):
         self.exitMaintenancePushButton.setObjectName("exitMaintenancePushButton")
         self.horizontalLayout.addWidget(self.exitMaintenancePushButton)
         self.verticalLayout.addWidget(self.maintenanceModeFrame)
+        self.alertFrame = QtWidgets.QFrame(self.verticalLayoutWidget)
+        self.alertFrame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.alertFrame.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.alertFrame.setObjectName("alertFrame")
+        self.horizontalLayout_3 = QtWidgets.QHBoxLayout(self.alertFrame)
+        self.horizontalLayout_3.setObjectName("horizontalLayout_3")
+        self.alertMessage = QtWidgets.QLabel(self.alertFrame)
+        self.alertMessage.setObjectName("alertMessage")
+        self.horizontalLayout_3.addWidget(self.alertMessage)
+        self.verticalLayout.addWidget(self.alertFrame)
         self.hudTextBrowser = QtWidgets.QTextBrowser(self.verticalLayoutWidget)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
@@ -103,7 +113,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_3.addWidget(self.plotSplitter)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 742, 20))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 597, 21))
         self.menubar.setObjectName("menubar")
         self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")
@@ -131,7 +141,10 @@ class Ui_MainWindow(object):
         self.actionMaintence_Mode = QtWidgets.QAction(MainWindow)
         self.actionMaintence_Mode.setCheckable(True)
         self.actionMaintence_Mode.setObjectName("actionMaintence_Mode")
+        self.actionSync_Output = QtWidgets.QAction(MainWindow)
+        self.actionSync_Output.setObjectName("actionSync_Output")
         self.menuFile.addAction(self.actionLoad_Configuration)
+        self.menuFile.addAction(self.actionSync_Output)
         self.menuFile.addAction(self.actionShow_Data)
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.actionMaintence_Mode)
@@ -153,13 +166,14 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "ANSTO RDM"))
         self.label_2.setToolTip(_translate("MainWindow", "Maintenance mode indicates that the detector is undergoing maintenance and measurements should be disregarded."))
-        self.label_2.setText(_translate("MainWindow", "⚠️ Maintenance Mode is Active"))
+        self.label_2.setText(_translate("MainWindow", "⚠️ Maintenance Mode Active"))
         self.exitMaintenancePushButton.setText(_translate("MainWindow", "Exit Maintenance Mode"))
+        self.alertMessage.setText(_translate("MainWindow", "⚠️ Calibration Unit Active"))
         self.hudTextBrowser.setHtml(_translate("MainWindow", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><title>template table</title><style type=\"text/css\">\n"
 "p, li { white-space: pre-wrap; }\n"
-"</style></head><body style=\" font-family:\'Sans Serif\'; font-size:9pt; font-weight:400; font-style:normal;\">\n"
-"<p align=\"center\" style=\" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'MS Shell Dlg 2\'; font-size:8.25pt;\">...waiting for data...</span></p></body></html>"))
+"</style></head><body style=\" font-family:\'MS Shell Dlg 2\'; font-size:8.25pt; font-weight:400; font-style:normal;\">\n"
+"<p align=\"center\" style=\" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">...waiting for data...</p></body></html>"))
         self.label.setText(_translate("MainWindow", "No data"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MainWindow", "No data to display"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
@@ -172,4 +186,5 @@ class Ui_MainWindow(object):
         self.actionDarkMode.setText(_translate("MainWindow", "Dark Mode"))
         self.actionViewSensitivitySweep.setText(_translate("MainWindow", "Sensitivity Sweep"))
         self.actionMaintence_Mode.setText(_translate("MainWindow", "Maintence Mode"))
+        self.actionSync_Output.setText(_translate("MainWindow", "Sync Output Files"))
 
