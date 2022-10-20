@@ -119,7 +119,7 @@ class TableModel(QtCore.QAbstractTableModel):
         assert len(self._data) == N + Nnew
 
         # remove rows if maximum has been exceeded
-        N_max = 1000  # TODO: config?
+        N_max = 8640  # TODO: config?  Now, use enough for 24h of 10 sec values
         if len(self._data) > N_max:
             N_to_remove = len(self._data) - N_max
             self.beginRemoveRows(QtCore.QModelIndex(), 0, N_to_remove - 1)
@@ -196,13 +196,23 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
             self.table_selected
         )
 
+        # TODO: chase up how to extract the column names from a selection range
+        # rather than just the position.
+
+        #self.pastDataTableView.selectionModel().selectionChanged.connect(
+        #    self.test
+        #)
+
+    #def test(self, arg1, arg2):
+    #    print("===", arg1, arg2)
+    #    for itm in arg1:
+    #        print(itm)
+
     def table_selected(self, idx):
         # print('column selected')
         c0, r0 = idx.column(), idx.row()
         # print(f'{c0,r0}')
         self.selected_column = idx.column()
-        print("***", idx)
-        print("****", idx.parent())
 
     def plot(self, x, y, legend_data=None, title=None):
         if self.legend is not None:
@@ -299,6 +309,14 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
 
         self.graph_widget.setTitle(title)
 
+    def autoScroll(self):
+        """
+        Scroll the table view to the bottom.  Uses a timer so that the table can
+        update itself before the scroll happens
+        """
+        QtCore.QTimer.singleShot(0, self.pastDataTableView.scrollToBottom)
+
+
     def update_displays(self):
         dt_threshold = 0.95
         ic = self.main_window.instrument_controller
@@ -306,6 +324,8 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
         # dt_threshold seconds ago
         if ic is None or (time.time() - self.last_redraw_time) < dt_threshold:
             return
+
+        first_run = self.last_update_time is None
 
         if self.last_update_time is None:
             if self.table_name == "Results":
@@ -322,7 +342,11 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
         t, newdata = ic.get_rows(self.table_name, start_time=start_time)
         if t is not None:
             self.last_update_time = t
+            sb = self.pastDataTableView.verticalScrollBar()
+            scroll_bar_at_bottom = sb.value() >= sb.maximum()
             self.model.append_data(newdata)
+            if scroll_bar_at_bottom or first_run:
+                self.autoScroll()
 
         # TODO: link to plot data, or somehow avoid copying the entire
         # x/y series each time
