@@ -167,6 +167,11 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
         # the last time this table was updated
         self.last_update_time = None
         self.last_redraw_time = 0
+        # this is set to True when there is new data which hasn't yet
+        # been drawn on the plot
+        self.flag_new_plot_data = False
+        # for detecting a change in column
+        self.previous_selected_column = -1
 
         self.connect_signals()
 
@@ -340,6 +345,9 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
         else:
             start_time = self.last_update_time
         t, newdata = ic.get_rows(self.table_name, start_time=start_time)
+        if len(newdata) > 0:
+            self.flag_new_plot_data = True
+        
         if t is not None:
             self.last_update_time = t
             sb = self.pastDataTableView.verticalScrollBar()
@@ -350,17 +358,30 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
 
         # TODO: link to plot data, or somehow avoid copying the entire
         # x/y series each time
-        if self.graph_widget is not None:
-            if self.selected_column is not None and self.selected_column != 0:
-                # find DetectorName column
-                yname, y = self.model.get_plot_data(column_idx=self.selected_column)
-                xname, x = self.model.get_plot_data(column_idx=0)
-                detector_name = self.model.get_detector_name_data()
-                # pyqtgraph timestamps are assumed to be in non-daylight saving time
-                # Here, I'm subtracting the timezone offset (in seconds) so that
-                # the plotted value is in UTC
-                x = [itm.timestamp() + time.timezone for itm in x]
-                self.step_plot(x, y, legend_data=detector_name, title=yname)
+        redraw_plot = False
+        redraw_plot = (
+            (self.graph_widget is not None) and
+            (first_run or self.graph_widget.isVisible()) and
+            (self.selected_column is not None) and
+            (self.selected_column != 0) and
+            (self.flag_new_plot_data or (self.selected_column != self.previous_selected_column))
+        )
+        ## for debugging
+        #if self.graph_widget is not None:
+        #    print("***", self.graph_widget, redraw_plot, self.graph_widget.isVisible())
+        
+        if redraw_plot:
+            # find DetectorName column
+            yname, y = self.model.get_plot_data(column_idx=self.selected_column)
+            xname, x = self.model.get_plot_data(column_idx=0)
+            detector_name = self.model.get_detector_name_data()
+            # pyqtgraph timestamps are assumed to be in non-daylight saving time
+            # Here, I'm subtracting the timezone offset (in seconds) so that
+            # the plotted value is in UTC
+            x = [itm.timestamp() + time.timezone for itm in x]
+            self.step_plot(x, y, legend_data=detector_name, title=yname)
+            self.flag_new_plot_data = False
+            self.previous_selected_column = self.selected_column
 
         self.last_redraw_time = time.time()
 

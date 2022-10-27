@@ -386,6 +386,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.data_plotter = DataPlotter(self.pgwin, data)
 
     def update_plots(self, table_name):
+        # check that window is visible
+        # TODO: this always seems to return True, even when the window
+        # is hidden
+        if self.pgwin is not None:
+            pass
+            #print("*** visible?:", self.pgwin.isVisible())
+        if self.pgwin is not None and not self.pgwin.isVisible():
+            # the widget isn't visible, so skip this update
+            return
+        
         update_needed, data = self.update_plot_data(table_name)
         if update_needed:
             if self.pgwin is None:
