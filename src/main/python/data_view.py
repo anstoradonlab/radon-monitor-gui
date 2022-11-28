@@ -350,6 +350,10 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
         
         if t is not None:
             self.last_update_time = t
+            # use the database rowid as the reference, rather than taking the
+            # time into account (this handles multipe detectors where one might
+            # stop updating for a while)
+            self.last_update_time.t = None
             sb = self.pastDataTableView.verticalScrollBar()
             scroll_bar_at_bottom = sb.value() >= sb.maximum()
             self.model.append_data(newdata)
