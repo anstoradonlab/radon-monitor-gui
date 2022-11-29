@@ -106,7 +106,7 @@ class TableModel(QtCore.QAbstractTableModel):
 
         if (
             "Datetime" in self._column_names
-            and not self._data[-1]["Datetime"] < new_data[0]["Datetime"]
+            and not self._data[-1]["Datetime"] <= new_data[0]["Datetime"]
         ):
             # print("new data breaks sorting, resetting model")
             # appending new data would make the model no longer sorted by date
@@ -114,8 +114,8 @@ class TableModel(QtCore.QAbstractTableModel):
             data = []
             data.extend(self._data)
             data.extend(new_data)
-            new_data.sort(key=lambda x: x["Datetime"])
-            self.update_data(new_data)
+            data.sort(key=lambda x: x["Datetime"])
+            self.update_data(data)
             return
 
         # print(f"new data:{new_data}, length {N}, {N+len(new_data)-1}")
