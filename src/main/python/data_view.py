@@ -22,35 +22,9 @@ class TableModel(QtCore.QAbstractTableModel):
         super(TableModel, self).__init__()
         self._data = data
         if len(data) > 0:
-            self._column_names = self._get_column_names(data)
+            self._column_names = list(data[0])
         else:
             self._column_names = []
-
-    def _get_column_names(self, data):
-        """
-        Get column names from data plus existing column names
-         - data is a list of dicts
-        """
-        # use cols as a stand-in for a set, but preserving order
-
-        cols = dict.fromkeys(self._column_names)
-        for itm in data:
-            cols.update(dict.fromkeys(itm))
-        colnames = list(cols)
-        return colnames
-    
-    def _normalise(self, data):
-        """
-        normalise data so that it contains the same column names as existing
-        data.  Columns without data are assigned None
-        """
-        data_normed = []
-        colnames = self._get_column_names(data)
-        for itm in data:
-            normed = dict.fromkeys(colnames)
-            normed.update(itm)
-            data_normed.append(normed)
-        return colnames, data_normed
 
     def data(self, index, role):
         if role == Qt.DisplayRole:
@@ -101,7 +75,8 @@ class TableModel(QtCore.QAbstractTableModel):
             # no-op
             return
         self.beginResetModel()
-        self._column_names, self._data = self._normalise(new_data)
+        self._data = new_data
+        self._column_names = list(new_data[0])
         self.endResetModel()
 
     # def append_data(self, new_data):
@@ -126,11 +101,6 @@ class TableModel(QtCore.QAbstractTableModel):
             import traceback
             tb = '\n'.join(traceback.format_stack())
             _logger.warning(f"Old vs new column names do not match.  Old: {self._column_names}, New: {list(new_data[0])}, backtrace:\n{tb}")
-
-            data = []
-            data.extend(self._data)
-            data.extend(new_data)
-            new_data.sort(key=lambda x: x["Datetime"])
             self.update_data(new_data)
             return
 
