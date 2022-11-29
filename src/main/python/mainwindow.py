@@ -352,11 +352,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         k = table_name
         default_npoints = {"RTV": 600 * 24, "Results": 24 * 2 * 10}
         npoints = default_npoints.get(k, 1000)
+        default_max_age = {"RTV": datetime.timedelta(days=1), "Results":datetime.timedelta(days=10)}
+        max_age = default_max_age.get(k, datetime.timedelta(days=1))
         if self.plot_data is None:
             self.plot_data = {"buffer": {}, "t": {}}
 
         buffer = self.plot_data["buffer"].get(k, collections.deque(maxlen=npoints))
         told = self.plot_data["t"].get(k, None)
+        if told is None:
+            told = datetime.datetime.now(tz=datetime.timezone.utc) - max_age
         tnew, newdata = self.instrument_controller.get_rows(table_name, told)
         data_has_changed = False
         if not tnew == told:
