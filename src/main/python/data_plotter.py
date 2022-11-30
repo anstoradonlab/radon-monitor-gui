@@ -43,11 +43,11 @@ class DataPlotter(object):
             "AirT_Avg": "degC",
         }
         self._name_dict = {
-            "LLD_Tot": "Total counts",
-            "ULD_Tot": "Noise counts",
+            "LLD_Tot": "Counts",
+            "ULD_Tot": "Noise",
             "ExFlow_Tot": "Ext. flow",
             "InFlow_Avg": "Int. flow",
-            "HV_Avg": "PMT power",
+            "HV_Avg": "PMT",
             "AirT_Avg": "Air temp.",
         }
 
