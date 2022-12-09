@@ -365,7 +365,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # don't consider the time of the update, just the database rowid (see LastRowToken)
         # which lets us handle multiple detectors & interruptions in data transfer from
         # one of them
-        tnew.t = None
+        if tnew is not None:
+            tnew.t = None
         data_has_changed = False
         if not tnew == told:
             self.plot_data["t"][k] = tnew
