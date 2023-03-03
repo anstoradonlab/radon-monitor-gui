@@ -28,6 +28,7 @@ from data_view import DataViewForm
 from sensitivity_sweep import SensitivitySweepForm
 from system_information import SystemInformationForm
 from ui_mainwindow import Ui_MainWindow
+from timeout_dialog import TimeoutDialog
 
 # import pandas as pd
 # import tabulate
@@ -194,7 +195,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Begin logging if we can find a configuration file
         if self.qsettings.contains("config_fname"):
             config_fname = self.qsettings.value("config_fname")
-            self.begin_controlling(config_fname)
+            # allow the user to interrupt startup
+            td = TimeoutDialog(timeout=10, config_fname=config_fname, parent=self)
+            if td.exec():
+                self.begin_controlling(config_fname)
 
         # create dialog (but don't show it)
         self.create_calibration_dialog()
@@ -527,6 +531,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # for visual purposes
         lab = QtWidgets.QLabel("")
         tabwidget.addTab(lab, "Waiting for data")
+
 
     @property
     def is_logging(self):
