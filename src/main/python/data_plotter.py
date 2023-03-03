@@ -20,6 +20,7 @@ _logger = logging.getLogger(__name__)
 class DataPlotter(object):
     def __init__(self, win: pg.GraphicsLayoutWidget, data: typing.List):
         self.setup(win, data)
+        self.flag_setup_neeeded = False
 
     def setup(self, win, data):
         self.win: pg.GraphicsLayoutWidget = win
@@ -69,6 +70,8 @@ class DataPlotter(object):
                 idx=idx,
                 Nplts=N,
             )
+        
+        self.flag_setup_neeeded = False
 
     def plot(self, win, data, xvar, yvar, huevar, idx, Nplts):
         po = {}
@@ -114,7 +117,17 @@ class DataPlotter(object):
 
         self._plot_objects[idx] = po
 
+    def clear(self):
+        self.win.clear()
+        self.flag_setup_neeeded = True
+
     def update(self, data):
+        if self.flag_setup_neeeded:
+            # regenerate the entire plot
+            self.win.clear()
+            self.setup(self.win, data)
+            return
+
         flag_need_regenerate = False
         datac = data_to_columns(data)
         for idx, po in self._plot_objects.items():

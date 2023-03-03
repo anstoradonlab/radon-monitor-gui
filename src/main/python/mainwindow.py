@@ -418,9 +418,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def close_plots(self):
         if self.pgwin is not None:
-            # self.pgwin.close() ???
-            self.pgwin.destroyLater()
+            self.pgwin.close()
+            #self.pgwin.destroyLater()
             self.pgwin = None
+
+    def clear_plots(self):
+        if self.pgwin is not None:
+            self.data_plotter.clear()
+        self.plot_data = None
 
     def begin_controlling(self, config_fname):
 
@@ -480,7 +485,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if not self.is_logging:
             self.set_status("Disconnected", False)
             self.hudTextBrowser.setHtml("")
-            self.close_plots()
+            self.clear_plots()
             return
         self.update_plots("Results")
         self.update_plot_data("RTV")
@@ -531,6 +536,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # for visual purposes
         lab = QtWidgets.QLabel("")
         tabwidget.addTab(lab, "Waiting for data")
+        ## the plots on the right-hand side of main window
+        self.clear_plots()
+        
 
 
     @property
