@@ -17,18 +17,17 @@ from ansto_radon_monitor.configuration import (Configuration,
                                                config_from_inifile)
 from ansto_radon_monitor.main import setup_logging
 from ansto_radon_monitor.main_controller import MainController, initialize
+from c_and_b import CAndBForm
+from data_plotter import DataPlotter
+from data_view import DataViewForm
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 # from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtCore import QSettings, Qt, QTimer
-
-from c_and_b import CAndBForm
-from data_plotter import DataPlotter
-from data_view import DataViewForm
 from sensitivity_sweep import SensitivitySweepForm
 from system_information import SystemInformationForm
-from ui_mainwindow import Ui_MainWindow
 from timeout_dialog import TimeoutDialog
+from ui_mainwindow import Ui_MainWindow
 
 # import pandas as pd
 # import tabulate
@@ -247,8 +246,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             try:
                 ic_status = ic.get_status()
                 if "CalibrationUnitThread" in ic_status:
-                    cal_unit_message = ic_status['CalibrationUnitThread']['status']['message'].lower()
-                    cal_active = not(cal_unit_message == 'normal operation' or cal_unit_message == 'no connection')
+                    cal_unit_message = ic_status["CalibrationUnitThread"]["status"][
+                        "message"
+                    ].lower()
+                    cal_active = not (
+                        cal_unit_message == "normal operation"
+                        or cal_unit_message == "no connection"
+                    )
                 else:
                     # if there is no calibration unit active, then there will be no message about it in the status
                     # but also 'cal_active' should always be false
@@ -260,7 +264,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 _logger.error(msg)
 
         self.alertFrame.setVisible(cal_active)
-
 
     def set_status(self, message, happy=None):
         if happy is None:
@@ -280,7 +283,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def sync_output(self):
         if self.instrument_controller is not None:
             self.instrument_controller.backup_now()
-            
 
     def connect_signals(self):
         self.actionLoad_Configuration.triggered.connect(self.onLoadConfiguration)
@@ -370,7 +372,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         k = table_name
         default_npoints = {"RTV": 600 * 24, "Results": 24 * 2 * 10}
         npoints = default_npoints.get(k, 1000)
-        default_max_age = {"RTV": datetime.timedelta(days=1), "Results":datetime.timedelta(days=10)}
+        default_max_age = {
+            "RTV": datetime.timedelta(days=1),
+            "Results": datetime.timedelta(days=10),
+        }
         max_age = default_max_age.get(k, datetime.timedelta(days=1))
         if self.plot_data is None:
             self.plot_data = {"buffer": {}, "t": {}}
@@ -418,11 +423,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # is hidden
         if self.pgwin is not None:
             pass
-            #print("*** visible?:", self.pgwin.isVisible())
+            # print("*** visible?:", self.pgwin.isVisible())
         if self.pgwin is not None and not self.pgwin.isVisible():
             # the widget isn't visible, so skip this update
             return
-        
+
         update_needed, data = self.update_plot_data(table_name)
         if update_needed:
             if self.pgwin is None:
@@ -433,7 +438,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def close_plots(self):
         if self.pgwin is not None:
             self.pgwin.close()
-            #self.pgwin.destroyLater()
+            # self.pgwin.destroyLater()
             self.pgwin = None
 
     def clear_plots(self):
@@ -562,8 +567,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         tabwidget.addTab(lab, "Waiting for data")
         ## the plots on the right-hand side of main window
         self.clear_plots()
-        
-
 
     @property
     def is_logging(self):

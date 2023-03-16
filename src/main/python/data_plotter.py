@@ -6,9 +6,8 @@ import typing
 
 import numpy as np
 import pyqtgraph as pg
-from PyQt5 import QtCore, QtWidgets
-
 from plotutils import data_to_columns, get_pen, groupby_series
+from PyQt5 import QtCore, QtWidgets
 
 _logger = logging.getLogger(__name__)
 
@@ -70,7 +69,7 @@ class DataPlotter(object):
                 idx=idx,
                 Nplts=N,
             )
-        
+
         self.flag_setup_neeeded = False
 
     def plot(self, win, data, xvar, yvar, huevar, idx, Nplts):

@@ -6,15 +6,13 @@ from typing import Dict
 
 import numpy as np
 import pyqtgraph as pg
+from plotutils import groupby_series
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import QSettings, Qt, QTimer
 from pyqtgraph import PlotWidget
-
-from plotutils import groupby_series
 from ui_data_view import Ui_DataViewForm
 
 _logger = logging.getLogger(__name__)
-
 
 
 class TableModel(QtCore.QAbstractTableModel):
@@ -99,8 +97,11 @@ class TableModel(QtCore.QAbstractTableModel):
         if not (self._column_names) == list(new_data[0]):
             # new data looks different to old data - reset
             import traceback
-            tb = '\n'.join(traceback.format_stack())
-            _logger.warning(f"Old vs new column names do not match.  Old: {self._column_names}, New: {list(new_data[0])}, backtrace:\n{tb}")
+
+            tb = "\n".join(traceback.format_stack())
+            _logger.warning(
+                f"Old vs new column names do not match.  Old: {self._column_names}, New: {list(new_data[0])}, backtrace:\n{tb}"
+            )
             self.update_data(new_data)
             return
 
@@ -211,11 +212,11 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
         # TODO: chase up how to extract the column names from a selection range
         # rather than just the position.
 
-        #self.pastDataTableView.selectionModel().selectionChanged.connect(
+        # self.pastDataTableView.selectionModel().selectionChanged.connect(
         #    self.test
-        #)
+        # )
 
-    #def test(self, arg1, arg2):
+    # def test(self, arg1, arg2):
     #    print("===", arg1, arg2)
     #    for itm in arg1:
     #        print(itm)
@@ -328,7 +329,6 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
         """
         QtCore.QTimer.singleShot(0, self.pastDataTableView.scrollToBottom)
 
-
     def update_displays(self):
         dt_threshold = 0.95
         ic = self.main_window.instrument_controller
@@ -354,7 +354,7 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
         t, newdata = ic.get_rows(self.table_name, start_time=start_time)
         if len(newdata) > 0:
             self.flag_new_plot_data = True
-        
+
         if t is not None:
             self.last_update_time = t
             # use the database rowid as the reference, rather than taking the
@@ -371,16 +371,19 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
         # x/y series each time
         redraw_plot = False
         redraw_plot = (
-            (self.graph_widget is not None) and
-            (first_run or self.graph_widget.isVisible()) and
-            (self.selected_column is not None) and
-            (self.selected_column != 0) and
-            (self.flag_new_plot_data or (self.selected_column != self.previous_selected_column))
+            (self.graph_widget is not None)
+            and (first_run or self.graph_widget.isVisible())
+            and (self.selected_column is not None)
+            and (self.selected_column != 0)
+            and (
+                self.flag_new_plot_data
+                or (self.selected_column != self.previous_selected_column)
+            )
         )
         ## for debugging
-        #if self.graph_widget is not None:
+        # if self.graph_widget is not None:
         #    print("***", self.graph_widget, redraw_plot, self.graph_widget.isVisible())
-        
+
         if redraw_plot:
             # find DetectorName column
             yname, y = self.model.get_plot_data(column_idx=self.selected_column)

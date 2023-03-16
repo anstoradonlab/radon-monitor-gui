@@ -3,9 +3,8 @@ import logging
 import math
 import time
 
-from PyQt5 import QtCore, QtWidgets
-
 from cal_bg_start_time_widget import CalBgStartWidget
+from PyQt5 import QtCore, QtWidgets
 from ui_c_and_b import Ui_CAndBForm
 
 _logger = logging.getLogger(__name__)
@@ -84,8 +83,7 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
             self._start_time_widgets.append(widget)
 
     def _setup_calibration_options(self):
-        """Populate the options in the combobox
-        """
+        """Populate the options in the combobox"""
         combobox = self.operationTypeComboBox
         combobox.clear()
         config = self.mainwindow.config
