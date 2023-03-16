@@ -246,6 +246,9 @@ p, li { white-space: pre-wrap; }
    </property>
   </action>
   <action name="actionViewCalibration">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Calibration</string>
    </property>

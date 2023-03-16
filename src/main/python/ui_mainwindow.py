@@ -130,6 +130,7 @@ class Ui_MainWindow(object):
         self.actionShow_Data = QtWidgets.QAction(MainWindow)
         self.actionShow_Data.setObjectName("actionShow_Data")
         self.actionViewCalibration = QtWidgets.QAction(MainWindow)
+        self.actionViewCalibration.setEnabled(False)
         self.actionViewCalibration.setObjectName("actionViewCalibration")
         self.actionViewSystemInformation = QtWidgets.QAction(MainWindow)
         self.actionViewSystemInformation.setObjectName("actionViewSystemInformation")

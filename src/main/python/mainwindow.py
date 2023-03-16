@@ -246,10 +246,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if ic is not None:
             try:
                 ic_status = ic.get_status()
-                cal_unit_message = ic_status['CalibrationUnitThread']['status']['message'].lower()
-                cal_active = not(cal_unit_message == 'normal operation' or cal_unit_message == 'no connection')
+                if "CalibrationUnitThread" in ic_status:
+                    cal_unit_message = ic_status['CalibrationUnitThread']['status']['message'].lower()
+                    cal_active = not(cal_unit_message == 'normal operation' or cal_unit_message == 'no connection')
+                else:
+                    # if there is no calibration unit active, then there will be no message about it in the status
+                    # but also 'cal_active' should always be false
+                    cal_active = False
             except Exception as ex:
                 import traceback
+
                 msg = traceback.format_exc(ex)
                 _logger.error(msg)
 
@@ -320,7 +326,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.cal_dialog = cal_dialog
 
     def view_calibration_dialog(self):
+        if self.cal_dialog is None:
+            self.create_calibration_dialog()
         self.cal_dialog.show()
+
+    def close_calibration_dialog(self):
+        """close calibration dialog and (if a cal is running) reset the calbox state"""
+        if self.cal_dialog is not None:
+            self.cal_dialog.close()
+        self.cal_dialog = None
 
     def view_system_information_dialog(self):
         if self.sysinfo_dialog is not None:
@@ -433,6 +447,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #  * calibration dialog
         #  * large plots
 
+        # The calibration dialog needs to be closed to cancel an in-progress cal
+        # but also because it needs to be re-generated with options which suit
+        # the newly-loaded configuration file
+        self.close_calibration_dialog()
+
         if self.instrument_controller is not None:
             self.instrument_controller.shutdown()
         # update times need to be reset
@@ -462,6 +481,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         mm = self.instrument_controller.maintenance_mode
         self.actionMaintence_Mode.setChecked(mm)
         self.maintenanceModeFrame.setVisible(mm)
+
+        # enable/disable the view->calibration menu item as appropriate
+        self.actionViewCalibration.setEnabled(
+            self.instrument_controller.has_calibration_unit
+        )
 
     def closeEvent(self, event):
         # catch the close event
