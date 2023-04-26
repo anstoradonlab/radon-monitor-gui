@@ -80,7 +80,8 @@ class DataPlotter(object):
         po["idx"] = idx
         try:
             x = data[xvar]
-            y = data[yvar]
+            # conversion into dtype=float converts None values into nan
+            y = np.array(data[yvar], dtype=float)
             legend_data = data[huevar]
         except Exception as e:
             _logger.error(f"Encounted error while generating plot: {e}")
