@@ -108,6 +108,7 @@ class Ui_MainWindow(object):
         font = QtGui.QFont()
         font.setFamily("Monospace")
         self.logArea.setFont(font)
+        self.logArea.setMaximumBlockCount(50000)
         self.logArea.setObjectName("logArea")
         self.verticalLayout.addWidget(self.splitter)
         self.verticalLayout_3.addWidget(self.plotSplitter)

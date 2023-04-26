@@ -186,6 +186,9 @@ p, li { white-space: pre-wrap; }
              <family>Monospace</family>
             </font>
            </property>
+           <property name="maximumBlockCount">
+            <number>50000</number>
+           </property>
           </widget>
          </widget>
         </item>
