@@ -137,7 +137,8 @@ class DataPlotter(object):
             hue = po["huevar"]
             idx = po["idx"]
             x = datac[x]
-            y = datac[y]
+            # conversion into dtype=float converts None values into nan
+            y = np.array(datac[y], dtype=float)
             legend_data = datac[hue]
 
             for series_idx, (x, y, label) in enumerate(
