@@ -260,7 +260,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             except Exception as ex:
                 import traceback
 
-                msg = traceback.format_exc(ex)
+                msg = traceback.format_exc()
                 _logger.error(msg)
 
         self.alertFrame.setVisible(cal_active)
