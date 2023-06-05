@@ -370,6 +370,11 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
         cal_times = [itm.cal_start_time for itm in self._start_time_widgets]
         qs.setValue("t0_cal", cal_times)
 
+        background_interval_days = int(self.backgroundIntervalSpinBox.value())
+        qs.setValue("background_interval", background_interval_days*3600*24)
+        cal_interval_days = int(self.calibrationIntervalSpinBox.value())
+        qs.setValue("cal_interval", cal_interval_days*3600*24)
+
         # schedule enabled/disabled
         qs.setValue("schedule_enabled", self.enableScheduleButton.isChecked())
 
@@ -382,14 +387,20 @@ class CAndBForm(QtWidgets.QWidget, Ui_CAndBForm):
             v = qs.value(k)
             if v is not None:
                 w.setValue(int(v))
-        background_interval = qs.value("background_interval")
-        if background_interval is not None:
-            days = int(background_interval.total_seconds() / 3600.0 / 24.0)
-            self.backgroundIntervalSpinBox.setValue(days)
-        cal_interval = qs.value("cal_interval")
-        if cal_interval is not None:
-            days = int(cal_interval.total_seconds() / 3600.0 / 24.0)
-            self.calibrationIntervalSpinBox.setValue(days)
+        
+        try:
+            background_interval = float(qs.value("background_interval"))
+            if background_interval is not None:
+                days = int(round(background_interval / 3600.0 / 24.0))
+                self.backgroundIntervalSpinBox.setValue(days)
+            cal_interval = float(qs.value("cal_interval"))
+            if cal_interval is not None:
+                days = int(round(cal_interval / 3600.0 / 24.0))
+                self.calibrationIntervalSpinBox.setValue(days)
+        except Exception as ex:
+            _logger.error(
+                f"Unable to restore background or calibration interval from QSettings."
+            )
 
         bg_times = qs.value("t0_background")
         # should be an array of datetimes, but the array length might be
