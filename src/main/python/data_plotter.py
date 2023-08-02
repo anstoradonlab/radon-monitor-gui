@@ -21,7 +21,7 @@ class DataPlotter(object):
         self.setup(win, data)
         self.flag_setup_neeeded = False
 
-    def setup(self, win, data):
+    def setup(self, win: pg.GraphicsLayoutWidget, data):
         self.win: pg.GraphicsLayoutWidget = win
         # persistant storage of plot info needed for updates
         self._plot_objects = {}
@@ -69,10 +69,22 @@ class DataPlotter(object):
                 idx=idx,
                 Nplts=N,
             )
+        
+        # set the width of the y-labels so that the axes align
+        try:
+            plots = [self._plot_objects[ii]['plot'] for ii in range(N)]
+            widths = [p.getAxis('left').width() for p in plots]
+            # the extra padding helps if the initial plot range is quite small
+            maxwidth = max(widths) + 10
+            for p in plots:
+                p.getAxis('left').setWidth(int(maxwidth))
+        except Exception as ex:
+            import traceback
+            traceback.print_exc()
 
         self.flag_setup_neeeded = False
 
-    def plot(self, win, data, xvar, yvar, huevar, idx, Nplts):
+    def plot(self, win: pg.GraphicsLayoutWidget, data, xvar, yvar, huevar, idx, Nplts):
         po = {}
         po["xvar"] = xvar
         po["yvar"] = yvar
@@ -94,6 +106,9 @@ class DataPlotter(object):
                 "bottom": pg.DateAxisItem(),
             },
         )
+        if idx > 0:
+            p_ref = self._plot_objects[0]['plot']
+            p.setXLink(p_ref)
         labelStyle = {"font-size": "10pt"}
         p.setLabel(
             "left",
