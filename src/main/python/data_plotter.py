@@ -27,6 +27,7 @@ class DataPlotter(object):
         self._plot_objects = {}
         # TODO: this will need to change if we decide to support more than just the Results table
         plot_yvars = [
+            "ApproxRadon",
             "LLD_Tot",
             "ULD_Tot",
             "ExFlow_Tot",
@@ -35,14 +36,16 @@ class DataPlotter(object):
             "AirT_Avg",
         ]
         self._units_dict = {
+            "ApproxRadon": "Bq/m³",
             "LLD_Tot": "/30-min",
             "ULD_Tot": "/30-min",
             "ExFlow_Tot": "l/min",
             "InFlow_Avg": "m/s",
             "HV_Avg": "V",
-            "AirT_Avg": "degC",
+            "AirT_Avg": "°C",
         }
         self._name_dict = {
+            "ApproxRadon": "Rn",
             "LLD_Tot": "Counts",
             "ULD_Tot": "Noise",
             "ExFlow_Tot": "Ext. flow",
