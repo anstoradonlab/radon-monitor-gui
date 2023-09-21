@@ -155,6 +155,24 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
         super(DataViewForm, self).__init__(*args, **kwargs)
         self.setupUi(self)
 
+        # set the first column in the table (the Datetime column) to fit its data
+        # note: this is done by setting an absolute value, because setting the column
+        # with to automatically resize to fit its data seems to crash the program
+        # (maybe due to no data being present at startup?)
+        if False:
+            header = self.pastDataTableView.horizontalHeader()
+            header.resizeSection(0, 10)
+        if False:
+            # set the first column in the table (the Datetime column) to resize to fit its data
+            header = self.pastDataTableView.horizontalHeader()
+            try:
+                header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+            except Exception as ex:
+                print(ex)
+                import traceback
+                traceback.print_exc()
+
+
         self.plot_series = []
 
         tables_without_plots = ["LogMessages"]
@@ -366,6 +384,16 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
             self.model.append_data(newdata)
             if scroll_bar_at_bottom or first_run:
                 self.autoScroll()
+            
+            if first_run:
+                # set the first column in the table (the Datetime column) to resize to fit its data
+                header = self.pastDataTableView.horizontalHeader()
+                try:
+                    header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+                except Exception as ex:
+                    import traceback
+                    traceback.print_exc()
+
 
         # TODO: link to plot data, or somehow avoid copying the entire
         # x/y series each time
