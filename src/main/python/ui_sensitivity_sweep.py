@@ -76,7 +76,7 @@ class Ui_SensitivitySweepForm(object):
         self.hvSecSpinBox.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.hvSecSpinBox.setSuffix("")
         self.hvSecSpinBox.setMinimum(10)
-        self.hvSecSpinBox.setMaximum(500)
+        self.hvSecSpinBox.setMaximum(3600)
         self.hvSecSpinBox.setSingleStep(10)
         self.hvSecSpinBox.setProperty("value", 100)
         self.hvSecSpinBox.setObjectName("hvSecSpinBox")
