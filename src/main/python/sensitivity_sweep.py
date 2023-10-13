@@ -85,7 +85,19 @@ class SensitivitySweepForm(QtWidgets.QWidget, Ui_SensitivitySweepForm):
             return
         row = copy.deepcopy(row)
         row["HV_nominal"] = np.NaN
-        self.timeseries_data.append(row)
+        noiseOk = True
+        if self.noiseCheckBox.isEnabled():
+            # Check that there isn't any noise on this measurement
+            try:
+                # on the RTV table, ULD is just called "ULD" (not ULD_Tot)
+                if row["ULD"] > 0:
+                    noiseOk=False
+            except:
+                # TODO: log this error somehow?
+                noiseOk=True
+
+        if noiseOk:
+            self.timeseries_data.append(row)
 
         target = self.v
         self.hvTargetLabel.setText(f"{target} V")
@@ -112,7 +124,7 @@ class SensitivitySweepForm(QtWidgets.QWidget, Ui_SensitivitySweepForm):
             self.instructionLabel.setText(
                 "Set PMT voltage (HV supply) to target value..."
             )
-        else:
+        elif noiseOk:
             row["HV_nominal"] = target
             n = self._samples_at_voltage[target]
             n += 1
@@ -130,6 +142,9 @@ class SensitivitySweepForm(QtWidgets.QWidget, Ui_SensitivitySweepForm):
                 # go to the next voltage
                 self.v += self.vstep
                 self._samples_at_voltage[self.v] = 0
+        else:
+            # We're at the right HV setting, but noise was detected on the measurement
+            pass
 
     def update_plot(self):
 

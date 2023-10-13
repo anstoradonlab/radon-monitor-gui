@@ -160,6 +160,19 @@
           </property>
          </widget>
         </item>
+        <item row="8" column="1">
+         <widget class="QCheckBox" name="noiseCheckBox">
+          <property name="toolTip">
+           <string>Any noisy measurements (ULD counts &gt; 0) are repeated with this option enabled</string>
+          </property>
+          <property name="text">
+           <string>Exclude Noisy</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
      </item>
