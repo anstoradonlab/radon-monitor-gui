@@ -385,7 +385,10 @@ class DataViewForm(QtWidgets.QWidget, Ui_DataViewForm):
             if scroll_bar_at_bottom or first_run:
                 self.autoScroll()
             
-            if first_run:
+            # this is disabled because sometimes RDM produces a table without any data
+            # in it, which crashes the program.  We shall re-enable when we get this working
+            # (needs a check for empty data tables)
+            if first_run and False:
                 # set the first column in the table (the Datetime column) to resize to fit its data
                 header = self.pastDataTableView.horizontalHeader()
                 try:
